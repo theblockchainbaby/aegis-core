@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.venv/
+*.egg-info/
+
+# uv
+.python-version
+
+# Build artifacts
+build/
+dist/
+
+# Local data (memory, snapshots, logs)
+data/
+snapshots/
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+
+# Hardware build outputs
+firmware/heartbeat/build/
+hardware/pcb/output/
+hardware/shell/output/
+
+# Secrets
+.env
+.env.local

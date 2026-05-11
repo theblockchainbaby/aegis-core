@@ -1,0 +1,16 @@
+[Unit]
+Description=Aegis Core local NATS bus
+After=network.target
+Before=aegis-core@.service
+
+[Service]
+Type=simple
+User=aegis
+Group=aegis
+ExecStart=/usr/local/bin/nats-server -c /opt/aegis-core/ops/natsconfig/nats.conf
+Restart=on-failure
+RestartSec=2
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

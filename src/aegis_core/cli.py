@@ -16,6 +16,7 @@ import structlog
 
 from .bus import AegisBus
 from .services import (
+    heartbeat,
     keeper,
     memory,
     mind,
@@ -39,6 +40,7 @@ SERVICE_FACTORIES = {
     "voice": voice.make_service,
     "observer": observer.make_service,
     "keeper": keeper.make_service,
+    "heartbeat": heartbeat.make_service,
 }
 
 

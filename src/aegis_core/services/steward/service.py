@@ -27,6 +27,7 @@ from .._base import AegisService
 from .attention import AttentionSignals, StubAttentionSignals
 from .clock import Clock, SystemClock
 from .gate import GateState, evaluate
+from .decay import PresenceDecay
 from .recovery import SocialRecovery
 from .rules import Rules, load_rules
 from .tone_classifier import ToneClassifier
@@ -74,6 +75,8 @@ class StewardService(AegisService):
         self._last_aired_class: str | None = None
         self._recovery: SocialRecovery | None = None
         self._recovery_tick_task = None
+        self._decay: PresenceDecay | None = None
+        self._acks_this_window = 0
 
     async def setup(self, bus: AegisBus) -> None:
         self._bus = bus
@@ -86,6 +89,15 @@ class StewardService(AegisService):
             timeout_seconds=self._rules.social_recovery.trigger.utterance_unacknowledged_for_seconds,
             confidence_bump=self._rules.social_recovery.effects.confidence_threshold_bump,
             cooldown_minutes=self._rules.social_recovery.effects.cooldown_duration_minutes,
+        )
+
+        self._decay = PresenceDecay(
+            clock=self._clock,
+            window_days=self._rules.presence_decay.measurement_window_days,
+            low_engagement_threshold_per_week=self._rules.presence_decay.low_engagement_threshold_per_week,
+            multiplier_per_step=self._rules.confidence_threshold.presence_decay_multiplier_per_week,
+            floor=self._rules.presence_decay.floor.silence_budget_min,
+            baseline_budget=self._rules.silence_budget.default_weight_per_day,
         )
 
         # Open DB.
@@ -145,6 +157,7 @@ class StewardService(AegisService):
                 )
             self._last_aired_id = None
             self._last_aired_class = None
+            self._acks_this_window += 1
 
     async def _on_proposal(self, msg: UtteranceProposal) -> None:
         if (
@@ -160,7 +173,9 @@ class StewardService(AegisService):
             silence_budget_remaining=self._silence_budget_remaining,
             utterances_today=self._utterances_today,
             last_utterance_at=self._last_utterance_at,
-            presence_decay_multiplier=1.0,
+            presence_decay_multiplier=(
+                self._decay.multiplier() if self._decay is not None else 1.0
+            ),
             scar_tissue_penalty=self._scar.get_penalty(
                 str(msg.intervention_class)
             ),
@@ -224,10 +239,16 @@ class StewardService(AegisService):
     async def _recovery_tick_loop(self) -> None:
         import asyncio as _asyncio
 
+        counter = 0
         while not self._shutdown.is_set():
             await _asyncio.sleep(5)
             if self._recovery is not None:
                 self._recovery.tick()
+            counter += 1
+            if counter >= 12 and self._decay is not None:  # ~every minute
+                counter = 0
+                self._decay.tick(acknowledged_this_window=self._acks_this_window)
+                self._acks_this_window = 0
 
 
 def make_service(**kwargs) -> StewardService:

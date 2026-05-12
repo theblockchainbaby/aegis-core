@@ -75,3 +75,58 @@ async def test_steward_logs_proposal_decision(nats_server, tmp_path: Path):
     assert len(rows) == 1
     assert rows[0]["decision"] == "aired"
     assert rows[0]["text"] == "Yesterday you mentioned the landing page."
+
+
+from aegis_core.messages import VoiceSpeak
+
+
+@pytest.mark.asyncio
+@pytest.mark.timeout(15)
+async def test_aired_proposal_publishes_voice_speak(nats_server, tmp_path: Path):
+    db_path = tmp_path / "m.db"
+    service = StewardService(
+        nats_url=nats_server,
+        db_path=db_path,
+        rules_path=REPO_RULES,
+    )
+    task = asyncio.create_task(service.run())
+    await asyncio.sleep(0.3)
+
+    speaks: list[VoiceSpeak] = []
+
+    async def collect(msg: VoiceSpeak) -> None:
+        speaks.append(msg)
+
+    async with AegisBus.connect(nats_server) as listener:
+        await listener.subscribe("voice.speak", VoiceSpeak, collect)
+        await listener.flush()
+
+        async with AegisBus.connect(nats_server) as publisher:
+            await publisher.publish(
+                "state.changed",
+                StateChanged(
+                    timestamp=datetime.now(UTC),
+                    previous=PresenceState.ATTENTIVE,
+                    current=PresenceState.REFLECTIVE,
+                    reason="memory_candidate",
+                ),
+            )
+            await publisher.publish(
+                "mind.utterance_proposal",
+                UtteranceProposal(
+                    timestamp=datetime.now(UTC),
+                    text="Yesterday you mentioned the landing page.",
+                    intervention_class=InterventionClass.MEMORY_MAGIC,
+                    weight=1.0,
+                    confidence=0.92,
+                ),
+            )
+            await publisher.flush()
+            await asyncio.sleep(0.5)
+
+    service.shutdown()
+    await asyncio.wait_for(task, timeout=5)
+
+    assert len(speaks) == 1
+    assert speaks[0].intervention_class == InterventionClass.MEMORY_MAGIC
+    assert "landing page" in speaks[0].text

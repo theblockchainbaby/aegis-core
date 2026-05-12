@@ -68,8 +68,12 @@ class StewardService(AegisService):
         self._scar: ScarTissueStore | None = None
         self._rules: Rules | None = None
         self._tone: ToneClassifier | None = None
+        self._bus: AegisBus | None = None
+        self._last_aired_id: int | None = None
+        self._last_aired_class: str | None = None
 
     async def setup(self, bus: AegisBus) -> None:
+        self._bus = bus
         # Load rules at startup.
         self._rules = load_rules(self._rules_path)
         self._tone = ToneClassifier()
@@ -127,13 +131,26 @@ class StewardService(AegisService):
 
         now = self._clock.now()
         if decision.proceed:
-            self._interventions.log_aired(
+            self._last_aired_id = self._interventions.log_aired(
                 timestamp=now,
                 intervention_class=str(msg.intervention_class),
                 weight=msg.weight,
                 confidence=msg.confidence,
                 text=msg.text,
             )
+            self._last_aired_class = str(msg.intervention_class)
+            if self._bus is not None:
+                from ...messages import VoiceSpeak
+
+                await self._bus.publish(
+                    "voice.speak",
+                    VoiceSpeak(
+                        timestamp=now,
+                        text=msg.text,
+                        intervention_class=msg.intervention_class,
+                        weight=msg.weight,
+                    ),
+                )
             self._silence_budget_remaining -= decision.weight_cost
             self._utterances_today += 1
             self._last_utterance_at = now

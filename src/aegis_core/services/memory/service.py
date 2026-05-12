@@ -151,6 +151,20 @@ class MemoryService(AegisService):
         await bus.subscribe("senses.thermal", ThermalReading, self._on_thermal)
         await bus.subscribe("state.changed", StateChanged, self._on_state)
 
+    def query_recent_events(self, limit: int = 100) -> list[dict]:
+        if self._events is None:
+            return []
+        return self._events.recent(limit=limit)
+
+    def query_moments(
+        self,
+        state: str | None = None,
+        limit: int = 100,
+    ) -> list[dict]:
+        if self._moments is None:
+            return []
+        return self._moments.query(state=state, limit=limit)
+
     async def teardown(self, bus: AegisBus) -> None:
         if self._conn is not None:
             try:

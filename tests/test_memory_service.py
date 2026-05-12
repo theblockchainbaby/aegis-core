@@ -147,3 +147,36 @@ async def test_memory_opens_and_closes_moment_on_state_transition(
     sig = _json.loads(moment["signature_json"])
     assert sig["posture_events"] == 3
     assert sig["focus_score"] > 0.0
+
+
+@pytest.mark.asyncio
+@pytest.mark.timeout(15)
+async def test_memory_query_api(nats_server, tmp_path: Path):
+    db_path = tmp_path / "memory.db"
+    service = MemoryService(nats_url=nats_server, db_path=db_path)
+    task = asyncio.create_task(service.run())
+    await asyncio.sleep(0.3)
+
+    async with AegisBus.connect(nats_server) as publisher:
+        for _ in range(3):
+            await publisher.publish(
+                "senses.presence",
+                PresenceObserved(
+                    timestamp=datetime.now(UTC),
+                    present=True,
+                    source="mmwave",
+                    confidence=0.9,
+                ),
+            )
+        await publisher.flush()
+        await asyncio.sleep(0.3)
+
+    events = service.query_recent_events(limit=10)
+    assert len(events) == 3
+    assert all(e["subject"] == "senses.presence" for e in events)
+
+    moments = service.query_moments()
+    assert isinstance(moments, list)
+
+    service.shutdown()
+    await asyncio.wait_for(task, timeout=5)

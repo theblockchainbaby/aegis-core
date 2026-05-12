@@ -89,3 +89,20 @@ async def test_mock_presence_replays_recorded_events():
     assert events[0].present is False
     assert events[1].present is True
     assert events[1].source == "mmwave"
+
+
+from aegis_core.services.senses.sources.mock_environment import MockEnvironmentSource
+
+
+@pytest.mark.asyncio
+async def test_mock_environment_yields_both_readings():
+    src = MockEnvironmentSource(lux=200.0, celsius=42.0, ticks=3)
+    seen_subjects = set()
+    events = []
+    async for subject, msg in src.events():
+        seen_subjects.add(subject)
+        events.append(msg)
+    await src.aclose()
+
+    assert seen_subjects == {"senses.ambient_light", "senses.thermal"}
+    assert len(events) == 6  # 3 ticks × 2 readings each

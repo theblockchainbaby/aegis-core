@@ -115,5 +115,75 @@ def ping(nats_url: str, service: str | None) -> None:
     asyncio.run(run())
 
 
+@main.group()
+def trace() -> None:
+    """Trace replay tools — drive Aegis Core from a fixture."""
+
+
+@trace.command("replay")
+@click.argument("fixture_path", type=click.Path(exists=True))
+@click.option("--nats-url", default="nats://127.0.0.1:4222")
+@click.option("--real-time/--fast", default=False, help="Pace events at recorded cadence.")
+def trace_replay(fixture_path: str, nats_url: str, real_time: bool) -> None:
+    """Replay a JSON trace fixture through the senses → state pipeline."""
+    from .services.senses.service import SensesService
+    from .services.senses.sources.trace import TraceRunner
+    from .services.state.service import StateService
+
+    repo_root = Path(__file__).resolve().parent.parent.parent
+    nats_conf = repo_root / "ops" / "natsconfig" / "nats.conf"
+    nats_proc = subprocess.Popen(
+        ["nats-server", "-c", str(nats_conf)],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+
+    async def run() -> None:
+        # Subscriber that prints state.changed.
+        from .messages import StateChanged
+
+        async with AegisBus.connect(nats_url) as listener:
+            async def print_state(msg: StateChanged) -> None:
+                click.echo(
+                    f"[state] {msg.previous} → {msg.current}  ({msg.reason})"
+                )
+
+            await listener.subscribe("state.changed", StateChanged, print_state)
+            await listener.flush()
+
+            state_service = StateService(
+                nats_url=nats_url,
+                tick_ms=100,
+                accelerate_for_test=1.0 if real_time else 50.0,
+            )
+            senses_service = SensesService(
+                nats_url=nats_url,
+                sources=[TraceRunner(fixture_path, real_time=real_time)],
+            )
+
+            tasks = [
+                asyncio.create_task(state_service.run()),
+                asyncio.create_task(senses_service.run()),
+            ]
+            # When the senses task completes (fixture exhausted), give state a
+            # short window to flush, then shut down.
+            await asyncio.wait(
+                [tasks[1]], return_when=asyncio.FIRST_COMPLETED, timeout=30
+            )
+            await asyncio.sleep(0.5)
+            state_service.shutdown()
+            senses_service.shutdown()
+            await asyncio.gather(*tasks, return_exceptions=True)
+
+    try:
+        asyncio.run(run())
+    finally:
+        nats_proc.terminate()
+        try:
+            nats_proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            nats_proc.kill()
+
+
 if __name__ == "__main__":
     main()

@@ -17,3 +17,31 @@ class PresenceObserved(AegisMessage):
     present: bool
     source: Literal["mmwave", "camera", "audio_vad"]
     confidence: float = Field(ge=0.0, le=1.0)
+
+
+class VoiceActivityDetected(AegisMessage):
+    """Frame-level voice activity decision from the VAD detector."""
+
+    active: bool
+    rms_db: float
+    confidence: float = Field(ge=0.0, le=1.0)
+
+
+class PostureObserved(AegisMessage):
+    """Coarse posture / engagement read from the camera."""
+
+    at_desk: bool
+    gaze: Literal["screen", "away", "absent"]
+    movement_score: float = Field(ge=0.0, le=1.0)
+
+
+class AmbientLightReading(AegisMessage):
+    """Lux reading from the ambient-light sensor."""
+
+    lux: float = Field(ge=0.0)
+
+
+class ThermalReading(AegisMessage):
+    """Compute-exhaust temperature reading."""
+
+    celsius: float

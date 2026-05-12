@@ -1,6 +1,4 @@
-"""memory service — Plan A stub. Real implementation in Plan C."""
-from .._stub import StubService
+"""memory service — bus → SQLite recorder + Moment manager."""
+from .service import MemoryService, make_service
 
-
-def make_service(**kwargs) -> StubService:
-    return StubService(name="memory", **kwargs)
+__all__ = ["MemoryService", "make_service"]

@@ -1,0 +1,19 @@
+{
+  "description": "Compressed canonical cycle from spec §11 — Dormant → Observing → Attentive → Reflective → Settling → Quiet. Time is compressed: dwell minimums are scaled down to seconds for test speed.",
+  "duration_s": 60,
+  "presence_events": [
+    {"offset_ms": 0,     "present": false, "confidence": 0.99},
+    {"offset_ms": 2000,  "present": true,  "confidence": 0.97},
+    {"offset_ms": 50000, "present": false, "confidence": 0.98}
+  ],
+  "posture_events": [
+    {"offset_ms": 2500,  "at_desk": true,  "gaze": "screen", "movement_score": 0.12},
+    {"offset_ms": 5000,  "at_desk": true,  "gaze": "screen", "movement_score": 0.05},
+    {"offset_ms": 30000, "at_desk": true,  "gaze": "screen", "movement_score": 0.02},
+    {"offset_ms": 45000, "at_desk": true,  "gaze": "away",   "movement_score": 0.30}
+  ],
+  "voice_events": [
+    {"offset_ms": 35000, "active": true,  "rms_db": -22.0, "confidence": 0.88},
+    {"offset_ms": 36000, "active": false, "rms_db": -38.0, "confidence": 0.72}
+  ]
+}

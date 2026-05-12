@@ -1,6 +1,4 @@
-"""mind service — Plan A stub. Real implementation in Plan E."""
-from .._stub import StubService
+"""mind service — Plan D mock; real implementation in Plan E."""
+from .mock_mind import MockMindService, ProposalRecipe, make_service
 
-
-def make_service(**kwargs) -> StubService:
-    return StubService(name="mind", **kwargs)
+__all__ = ["MockMindService", "ProposalRecipe", "make_service"]

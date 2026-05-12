@@ -106,3 +106,22 @@ async def test_mock_environment_yields_both_readings():
 
     assert seen_subjects == {"senses.ambient_light", "senses.thermal"}
     assert len(events) == 6  # 3 ticks × 2 readings each
+
+
+TRACE_FILE = Path(__file__).parent / "fixtures" / "traces" / "canonical_cycle.json"
+
+
+@pytest.mark.asyncio
+async def test_trace_runner_yields_events_in_offset_order():
+    from aegis_core.services.senses.sources.trace import TraceRunner
+
+    src = TraceRunner(TRACE_FILE)
+    events = [evt async for evt in src.events()]
+    await src.aclose()
+
+    subjects = [s for s, _ in events]
+    assert "senses.presence" in subjects
+    assert "senses.posture" in subjects
+    assert "senses.voice_activity" in subjects
+    # First two events should be presence (offset_ms 0 and 2000).
+    assert subjects[0] == "senses.presence"

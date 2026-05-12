@@ -1,3 +1,4 @@
+from ._base import AegisMessage
 from .sense_events import (
     AmbientLightReading,
     PostureObserved,
@@ -8,6 +9,7 @@ from .sense_events import (
 from .state_events import PresenceState, StateChanged
 
 __all__ = [
+    "AegisMessage",
     "AmbientLightReading",
     "PostureObserved",
     "PresenceObserved",

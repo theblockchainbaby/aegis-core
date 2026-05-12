@@ -35,3 +35,30 @@ async def test_mock_camera_uses_sidecar_metadata():
     assert events[1].at_desk is True
     assert events[1].gaze == "screen"
     assert events[1].movement_score == pytest.approx(0.12)
+
+
+from aegis_core.services.senses.sources.mock_audio import MockAudioSource
+
+
+AUDIO_DIR = Path(__file__).parent / "fixtures" / "audio"
+
+
+@pytest.mark.asyncio
+async def test_mock_audio_detects_quiet_typing_as_inactive():
+    src = MockAudioSource(AUDIO_DIR / "attentive_typing.wav")
+    events = [msg async for _, msg in src.events()]
+    await src.aclose()
+
+    active_fraction = sum(1 for e in events if e.active) / len(events)
+    assert active_fraction < 0.1, "near-silence should rarely register as active"
+
+
+@pytest.mark.asyncio
+async def test_mock_audio_detects_sine_burst_as_active():
+    src = MockAudioSource(AUDIO_DIR / "spoken_utterance.wav")
+    events = [msg async for _, msg in src.events()]
+    await src.aclose()
+
+    active_fraction = sum(1 for e in events if e.active) / len(events)
+    # The 2-second sine sits within a 3-second file → ~66% active expected.
+    assert 0.5 < active_fraction < 0.85

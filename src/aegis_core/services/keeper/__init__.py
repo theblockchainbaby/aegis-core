@@ -1,6 +1,4 @@
-"""keeper service — Plan A stub. Real implementation in Plan F."""
-from .._stub import StubService
+"""keeper service — nightly maintenance for the memory store."""
+from .service import KeeperService, make_service
 
-
-def make_service(**kwargs) -> StubService:
-    return StubService(name="keeper", **kwargs)
+__all__ = ["KeeperService", "make_service"]

@@ -5,7 +5,6 @@ import pytest
 
 from aegis_core.bus import AegisBus
 from aegis_core.services import (
-    keeper,
     mind,
     mood,
     observer,
@@ -19,7 +18,6 @@ ALL_NAMES = [
     "steward",
     "voice",
     "observer",
-    "keeper",
 ]
 
 FACTORIES = {
@@ -28,7 +26,6 @@ FACTORIES = {
     "steward": steward.make_service,
     "voice": voice.make_service,
     "observer": observer.make_service,
-    "keeper": keeper.make_service,
 }
 
 

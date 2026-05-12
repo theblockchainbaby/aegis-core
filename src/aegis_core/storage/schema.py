@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import sqlite3
 
-CURRENT_VERSION = 1
+CURRENT_VERSION = 2
 
 
 def run_migrations(conn: sqlite3.Connection) -> None:
@@ -24,6 +24,9 @@ def run_migrations(conn: sqlite3.Connection) -> None:
     if version < 1:
         _migrate_v1(conn)
         _set_version(conn, 1)
+    if version < 2:
+        _migrate_v2(conn)
+        _set_version(conn, 2)
 
 
 def current_schema_version(conn: sqlite3.Connection) -> int:
@@ -42,6 +45,40 @@ def _set_version(conn: sqlite3.Connection, version: int) -> None:
         ON CONFLICT(key) DO UPDATE SET value = excluded.value
         """,
         (str(version),),
+    )
+
+
+def _migrate_v2(conn: sqlite3.Connection) -> None:
+    """Plan D — intervention log + scar tissue persistence."""
+    conn.executescript(
+        """
+        CREATE TABLE interventions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp_utc TEXT NOT NULL,
+            intervention_class TEXT NOT NULL,
+            weight REAL NOT NULL,
+            confidence REAL NOT NULL,
+            text TEXT NOT NULL,
+            -- Plan D emits 'aired' or 'vetoed'. 'soft_vetoed' is reserved for
+            -- a future "not now" classification (postponed utterances,
+            -- wait-for-better-pause behavior) — Plan E. Reserving the enum
+            -- value now avoids a schema migration later.
+            decision TEXT NOT NULL CHECK (decision IN ('aired', 'vetoed', 'soft_vetoed')),
+            reasons_json TEXT,             -- JSON array of veto reasons
+            acknowledged INTEGER,          -- NULL = unknown, 0 = no, 1 = yes
+            acknowledged_at_utc TEXT,
+            created_at_utc TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX idx_interventions_timestamp ON interventions(timestamp_utc);
+        CREATE INDEX idx_interventions_decision ON interventions(decision);
+        CREATE INDEX idx_interventions_class ON interventions(intervention_class);
+
+        CREATE TABLE scar_tissue (
+            intervention_class TEXT PRIMARY KEY,
+            confidence_penalty REAL NOT NULL DEFAULT 0.0,
+            last_updated_utc TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        """
     )
 
 

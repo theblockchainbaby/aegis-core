@@ -180,3 +180,32 @@ async def test_memory_query_api(nats_server, tmp_path: Path):
 
     service.shutdown()
     await asyncio.wait_for(task, timeout=5)
+
+
+@pytest.mark.asyncio
+@pytest.mark.timeout(15)
+async def test_memory_query_themes_returns_keeper_themes(
+    nats_server,
+    tmp_path: Path,
+):
+    db_path = tmp_path / "memory.db"
+    service = MemoryService(nats_url=nats_server, db_path=db_path)
+    task = asyncio.create_task(service.run())
+    await asyncio.sleep(0.3)
+    service.shutdown()
+    await asyncio.wait_for(task, timeout=5)
+
+    # Manually upsert a theme via the storage layer to prove query_themes
+    # reads the same DB the service writes to.
+    conn = connect(db_path)
+    run_migrations(conn)
+    from aegis_core.storage.themes import ThemeStore
+
+    ThemeStore(conn).upsert("landing_page")
+    conn.close()
+
+    # New service instance reads the same DB.
+    service2 = MemoryService(nats_url=nats_server, db_path=db_path)
+    service2._open_db()
+    themes = service2.query_themes()
+    assert any(t["key"] == "landing_page" for t in themes)

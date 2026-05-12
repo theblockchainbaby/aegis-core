@@ -165,6 +165,12 @@ class MemoryService(AegisService):
             return []
         return self._moments.query(state=state, limit=limit)
 
+    def query_themes(self, min_count: int = 1, limit: int = 100) -> list[dict]:
+        if self._conn is None:
+            return []
+        from ...storage.themes import ThemeStore
+        return ThemeStore(self._conn).query(min_count=min_count, limit=limit)
+
     async def teardown(self, bus: AegisBus) -> None:
         if self._conn is not None:
             try:

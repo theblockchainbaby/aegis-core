@@ -117,7 +117,34 @@ class StewardService(AegisService):
                 pass
 
     async def _on_state(self, msg: StateChanged) -> None:
+        prev_state = self._presence_state
         self._presence_state = msg.current
+
+        # If we just left Reflective into Settling and we have a recent aired
+        # utterance, treat as acknowledged. Plan D approximation; Plan E adds
+        # real voice/response detection.
+        if (
+            prev_state == PresenceState.REFLECTIVE
+            and msg.current == PresenceState.SETTLING
+            and self._last_aired_class is not None
+            and self._recovery is not None
+            and self._scar is not None
+            and self._rules is not None
+        ):
+            self._scar.recover(
+                self._last_aired_class,
+                by=self._rules.conversational_scar_tissue.recovery_on_acknowledgment,
+                floor=self._rules.conversational_scar_tissue.floor,
+            )
+            self._recovery.note_acknowledgment()
+            if self._last_aired_id is not None and self._interventions is not None:
+                self._interventions.mark_acknowledged(
+                    self._last_aired_id,
+                    acknowledged=True,
+                    at=self._clock.now(),
+                )
+            self._last_aired_id = None
+            self._last_aired_class = None
 
     async def _on_proposal(self, msg: UtteranceProposal) -> None:
         if (
@@ -186,7 +213,13 @@ class StewardService(AegisService):
                 text=msg.text,
                 reasons=decision.reasons,
             )
-
+            # Scar tissue: this class repeatedly fails the gate → raise the
+            # bar for future proposals in this class.
+            self._scar.bump_veto(
+                str(msg.intervention_class),
+                by=self._rules.conversational_scar_tissue.vetoed_repeat_penalty,
+                cap=self._rules.conversational_scar_tissue.cap,
+            )
 
     async def _recovery_tick_loop(self) -> None:
         import asyncio as _asyncio

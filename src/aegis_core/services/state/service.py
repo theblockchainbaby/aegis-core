@@ -15,6 +15,7 @@ import structlog
 
 from ...bus import AegisBus
 from ...messages import (
+    AmbientLightReading,
     PostureObserved,
     PresenceObserved,
     PresenceState,
@@ -69,6 +70,11 @@ class StateService(AegisService):
         await bus.subscribe("senses.presence", PresenceObserved, on_presence)
         await bus.subscribe("senses.posture", PostureObserved, on_posture)
         await bus.subscribe("senses.voice_activity", VoiceActivityDetected, on_voice)
+
+        async def on_ambient(msg: AmbientLightReading) -> None:
+            await self._emit(self._machine.observe_ambient_light(msg))
+
+        await bus.subscribe("senses.ambient_light", AmbientLightReading, on_ambient)
 
     async def main(self, bus: AegisBus) -> None:
         async def tick_loop() -> None:

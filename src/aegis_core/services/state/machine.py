@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 from typing import Optional
 
 from ...messages import (
+    AmbientLightReading,
     PostureObserved,
     PresenceObserved,
     PresenceState,
@@ -17,6 +18,9 @@ from ...messages import (
 )
 from .rules import ALLOWED_DIRECT, MIN_DWELL_MS, is_allowed
 
+_DARK_LUX_THRESHOLD = 5.0
+_DARK_TICKS_FOR_SLEEP = 3
+
 
 class PresenceStateMachine:
     """In-memory state machine. Drive via observe_*() and tick_ms()."""
@@ -24,6 +28,7 @@ class PresenceStateMachine:
     def __init__(self, initial: PresenceState = PresenceState.DORMANT) -> None:
         self._state = initial
         self._dwell_ms = 0
+        self._dark_streak = 0
 
     @property
     def current(self) -> PresenceState:
@@ -110,4 +115,16 @@ class PresenceStateMachine:
     def observe_voice(self, msg: VoiceActivityDetected) -> Optional[StateChanged]:
         # Plan B: voice activity informs the steward (later plans). The state
         # machine itself doesn't transition on voice in v1.
+        return None
+
+    def observe_ambient_light(self, msg: AmbientLightReading) -> Optional[StateChanged]:
+        if msg.lux < _DARK_LUX_THRESHOLD:
+            self._dark_streak += 1
+        else:
+            self._dark_streak = 0
+        if (
+            self._dark_streak >= _DARK_TICKS_FOR_SLEEP
+            and self._state == PresenceState.DORMANT
+        ):
+            return self.request_transition(PresenceState.SLEEP, "dark_room")
         return None

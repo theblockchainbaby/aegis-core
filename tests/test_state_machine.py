@@ -75,3 +75,26 @@ def test_quiet_auto_expires_to_observing_after_dwell():
     assert t is not None
     assert t.previous == PresenceState.QUIET
     assert t.current == PresenceState.OBSERVING
+
+
+from aegis_core.messages import AmbientLightReading
+
+
+def test_dark_room_in_dormant_eventually_sleeps():
+    m = PresenceStateMachine()
+    m.force_state(PresenceState.DORMANT)
+    m.tick_ms(MIN_DWELL_MS[PresenceState.DORMANT] + 1)
+
+    for _ in range(3):
+        t = m.observe_ambient_light(AmbientLightReading(timestamp=_now(), lux=2.0))
+    assert m.current == PresenceState.SLEEP
+
+
+def test_lit_room_does_not_sleep():
+    m = PresenceStateMachine()
+    m.force_state(PresenceState.DORMANT)
+    m.tick_ms(MIN_DWELL_MS[PresenceState.DORMANT] + 1)
+
+    for _ in range(10):
+        t = m.observe_ambient_light(AmbientLightReading(timestamp=_now(), lux=400.0))
+    assert m.current == PresenceState.DORMANT

@@ -230,5 +230,87 @@ def trace_replay(
             nats_proc.kill()
 
 
+@main.group()
+def memory() -> None:
+    """Inspect the memory store — field notes of a quiet organism."""
+
+
+@memory.command("inspect")
+@click.option("--db", default="/tmp/aegis-memory.db", help="SQLite path.")
+@click.option(
+    "--raw",
+    is_flag=True,
+    default=False,
+    help="Include the raw event tail at the bottom (secondary).",
+)
+@click.option(
+    "--limit",
+    default=20,
+    help="Raw-event tail length (only used with --raw).",
+)
+def memory_inspect(db: str, raw: bool, limit: int) -> None:
+    """Show consolidated Moments and themes from the memory store.
+
+    Tone is anthropological / archival (spec §10): Moments and themes lead;
+    raw event telemetry is secondary and only shown with --raw.
+    """
+    from datetime import datetime as _dt
+
+    from .storage._conn import connect as _connect
+    from .storage.events import EventStore as _EventStore
+    from .storage.moments import MomentStore as _MomentStore
+    from .storage.schema import run_migrations as _run_migrations
+    from .storage.themes import ThemeStore as _ThemeStore
+
+    def _hhmm(iso: str | None) -> str:
+        if not iso:
+            return "—"
+        try:
+            return _dt.fromisoformat(iso).strftime("%H:%M")
+        except Exception:
+            return iso[:16]
+
+    conn = _connect(db)
+    _run_migrations(conn)
+
+    consolidated = _MomentStore(conn).query(state="consolidated", limit=50)
+    tentative = _MomentStore(conn).query(state="tentative", limit=50)
+    fading = _MomentStore(conn).query(state="fading", limit=50)
+    themes = _ThemeStore(conn).query(limit=50)
+
+    click.echo("── Moments ────────────────────────────────────")
+    if not consolidated:
+        click.echo("  (none yet)")
+    for m in consolidated:
+        start = _hhmm(m["started_at_utc"])
+        end = _hhmm(m["ended_at_utc"])
+        summary = m["summary"] or "(no summary)"
+        click.echo(f"  {start}–{end}  {summary}")
+        click.echo(f"    state: consolidated")
+    click.echo("")
+
+    click.echo(
+        f"── Tentative: {len(tentative)}   Fading: {len(fading)} ──"
+    )
+    click.echo("")
+
+    click.echo("── Themes ─────────────────────────────────────")
+    if not themes:
+        click.echo("  (none yet)")
+    for t in themes:
+        click.echo(
+            f"  {t['key']:<24s}  · seen {t['reinforcement_count']}x"
+        )
+    click.echo("")
+
+    if raw:
+        events = _EventStore(conn).recent(limit=limit)
+        click.echo("── Raw event tail (secondary) ─────────────────")
+        for e in events:
+            click.echo(f"  {e['timestamp_utc']}  {e['subject']}")
+
+    conn.close()
+
+
 if __name__ == "__main__":
     main()

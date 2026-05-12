@@ -123,12 +123,50 @@ def trace() -> None:
 @trace.command("replay")
 @click.argument("fixture_path", type=click.Path(exists=True))
 @click.option("--nats-url", default="nats://127.0.0.1:4222")
-@click.option("--real-time/--fast", default=False, help="Pace events at recorded cadence.")
-def trace_replay(fixture_path: str, nats_url: str, real_time: bool) -> None:
+@click.option(
+    "--real-time/--fast",
+    default=False,
+    help="Real-time honors recorded offsets; --fast (default) paces events at "
+    "min_pacing_ms wall clock between events.",
+)
+@click.option(
+    "--burst",
+    is_flag=True,
+    default=False,
+    help="Override pacing: fire events as fast as possible (no sleeps). "
+    "May race the listener subscription and dwell minimums; useful only "
+    "for stress / smoke tests.",
+)
+@click.option(
+    "--min-pacing-ms",
+    type=int,
+    default=None,
+    help="Minimum wall-clock ms between events. "
+    "Default: 100 (fast), 0 (burst), 0 (real-time floor).",
+)
+def trace_replay(
+    fixture_path: str,
+    nats_url: str,
+    real_time: bool,
+    burst: bool,
+    min_pacing_ms: int | None,
+) -> None:
     """Replay a JSON trace fixture through the senses → state pipeline."""
     from .services.senses.service import SensesService
     from .services.senses.sources.trace import TraceRunner
     from .services.state.service import StateService
+
+    # Resolve pacing:
+    #   --burst                       → 0 (override; user opted out of pacing)
+    #   --real-time                   → 0 (honor recorded offsets exactly)
+    #   default (--fast, no --burst)  → 100 ms wall between events
+    if min_pacing_ms is None:
+        if burst:
+            min_pacing_ms = 0
+        elif real_time:
+            min_pacing_ms = 0
+        else:
+            min_pacing_ms = 100
 
     repo_root = Path(__file__).resolve().parent.parent.parent
     nats_conf = repo_root / "ops" / "natsconfig" / "nats.conf"
@@ -158,17 +196,24 @@ def trace_replay(fixture_path: str, nats_url: str, real_time: bool) -> None:
             )
             senses_service = SensesService(
                 nats_url=nats_url,
-                sources=[TraceRunner(fixture_path, real_time=real_time)],
+                sources=[
+                    TraceRunner(
+                        fixture_path,
+                        real_time=real_time,
+                        min_pacing_ms=min_pacing_ms,
+                    )
+                ],
             )
 
-            tasks = [
-                asyncio.create_task(state_service.run()),
-                asyncio.create_task(senses_service.run()),
-            ]
+            # Start state first so subscriptions are live before senses publishes.
+            state_task = asyncio.create_task(state_service.run())
+            await asyncio.sleep(0.3)
+            senses_task = asyncio.create_task(senses_service.run())
+            tasks = [state_task, senses_task]
             # When the senses task completes (fixture exhausted), give state a
             # short window to flush, then shut down.
             await asyncio.wait(
-                [tasks[1]], return_when=asyncio.FIRST_COMPLETED, timeout=30
+                [senses_task], return_when=asyncio.FIRST_COMPLETED, timeout=30
             )
             await asyncio.sleep(0.5)
             state_service.shutdown()

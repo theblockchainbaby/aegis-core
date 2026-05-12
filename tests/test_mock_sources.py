@@ -125,3 +125,24 @@ async def test_trace_runner_yields_events_in_offset_order():
     assert "senses.voice_activity" in subjects
     # First two events should be presence (offset_ms 0 and 2000).
     assert subjects[0] == "senses.presence"
+
+
+@pytest.mark.asyncio
+async def test_trace_runner_min_pacing_ms_enforces_floor():
+    """min_pacing_ms imposes wall-clock spacing between events."""
+    import time
+
+    from aegis_core.services.senses.sources.trace import TraceRunner
+
+    # 9 events in the fixture; with 20ms pacing the first event fires
+    # immediately and the remaining 8 each wait 20ms → expected ≥ 160ms wall.
+    src = TraceRunner(TRACE_FILE, real_time=False, min_pacing_ms=20)
+    start = time.monotonic()
+    n = 0
+    async for _ in src.events():
+        n += 1
+    elapsed_ms = (time.monotonic() - start) * 1000
+    await src.aclose()
+
+    assert n == 9
+    assert elapsed_ms >= 150, f"elapsed {elapsed_ms:.1f} ms; expected >= 150"

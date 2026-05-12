@@ -1,12 +1,19 @@
-"""Plan B capstone — feed the canonical-cycle fixture through senses+state."""
+"""Plan B capstone — feed the canonical-cycle fixture through senses+state.
+
+Honest fixture replay (no synthetic events). TraceRunner paces events at
+min_pacing_ms=50 wall clock between events; the StateService runs with
+accelerate_for_test=50, so each 50ms wall = 2500ms virtual time. That
+comfortably exceeds the 500ms OBSERVING and 1000ms DORMANT dwell minimums
+the canonical-cycle trace exercises, so every transition has time to
+satisfy Presence Momentum before the next sensor event arrives.
+"""
 import asyncio
-from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 
 from aegis_core.bus import AegisBus
-from aegis_core.messages import PostureObserved, PresenceState, StateChanged
+from aegis_core.messages import PresenceState, StateChanged
 from aegis_core.services.senses.service import SensesService
 from aegis_core.services.senses.sources.trace import TraceRunner
 from aegis_core.services.state.service import StateService
@@ -34,37 +41,20 @@ async def test_canonical_cycle_produces_expected_transitions(nats_server):
         )
         senses_service = SensesService(
             nats_url=nats_server,
-            sources=[TraceRunner(FIXTURE, real_time=False)],
+            sources=[TraceRunner(FIXTURE, real_time=False, min_pacing_ms=50)],
         )
 
+        # state must subscribe to senses.* before senses publishes anything.
         state_task = asyncio.create_task(state_service.run())
-        await asyncio.sleep(0.3)  # let state service subscribe before senses publishes
+        await asyncio.sleep(0.3)
         senses_task = asyncio.create_task(senses_service.run())
-        tasks = [state_task, senses_task]
-        await asyncio.wait([senses_task], timeout=10)
 
-        # The trace runner exhausts near-instantaneously in non-real-time mode.
-        # Posture events from the fixture arrive while the machine still has
-        # dwell_ms=0 in OBSERVING (it just transitioned from DORMANT on the
-        # presence@true event). Give the tick loop time to satisfy the 500ms
-        # OBSERVING dwell, then re-publish a posture event from the fixture
-        # so the OBSERVING → ATTENTIVE edge can fire.
-        await asyncio.sleep(0.1)  # 100ms wall = 5000ms virtual (>> 500ms OBSERVING dwell)
-        await listener.publish(
-            "senses.posture",
-            PostureObserved(
-                timestamp=datetime.now(UTC),
-                at_desk=True,
-                gaze="screen",
-                movement_score=0.05,
-            ),
-        )
-        await listener.flush()
-        await asyncio.sleep(0.5)  # let state catch up
+        await asyncio.wait([senses_task], timeout=15)
+        await asyncio.sleep(0.5)  # let the state machine catch up
 
         state_service.shutdown()
         senses_service.shutdown()
-        await asyncio.gather(*tasks, return_exceptions=True)
+        await asyncio.gather(state_task, senses_task, return_exceptions=True)
 
     transitions = [(t.previous, t.current) for t in received]
     expected_subset = [

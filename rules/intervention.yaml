@@ -1,0 +1,71 @@
+# Rules of Intervention — Plan D version.
+# Human-editable. Loaded at Steward startup; restart the service to apply changes.
+# See docs/steward.md for the semantics of each section.
+
+silence_budget:
+  default_weight_per_day: 3.0
+  refill_rate_weight: 1.0
+  refill_rate_window_hours: 8
+  hard_cap_per_hour: 1
+  hard_cap_per_day: 5
+
+confidence_threshold:
+  default: 0.85
+  reflective_state: 0.85
+  social_recovery_window: 0.93
+  presence_decay_multiplier_per_week: 1.05
+
+intervention_weights:
+  ambient_note: 0.1
+  routine_continuity: 0.5
+  memory_magic: 1.0
+  emotional_check: 2.0
+
+allowed_states_for_speech:
+  - reflective
+
+forbidden_tones:
+  - imperative
+  - exclamation
+  - coaching
+  - quantified_advice
+  - hedging_assistantese
+
+forbidden_topics_v1:
+  - calendar_management
+  - email
+  - todo_creation
+
+competing_for_attention_checks:
+  block_during_active_typing: true
+  block_during_active_call: true
+  block_during_video_playback: true
+  min_natural_pause_seconds_before_speech: 4
+
+social_recovery:
+  trigger:
+    utterance_unacknowledged_for_seconds: 60
+    user_negative_response_detected: true
+    user_explicitly_silenced: true
+  effects:
+    confidence_threshold_bump: 0.08
+    cooldown_state: quiet
+    cooldown_duration_minutes: 45
+
+presence_decay:
+  measurement_window_days: 7
+  low_engagement_threshold_per_week: 2
+  effects_per_step:
+    silence_budget_reduction: 0.5
+    led_warmth_reduction_pct: 10
+    breath_cadence_slowdown_seconds: 0.4
+  floor:
+    silence_budget_min: 1.5
+
+conversational_scar_tissue:
+  track_per_intervention_class: true
+  vetoed_repeat_penalty: 0.03
+  unacknowledged_repeat_penalty: 0.05
+  recovery_on_acknowledgment: 0.07
+  floor: 0.00
+  cap: 0.15

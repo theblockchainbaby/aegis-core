@@ -8,14 +8,12 @@ from aegis_core.services import (
     mind,
     mood,
     observer,
-    steward,
     voice,
 )
 
 ALL_NAMES = [
     "mood",
     "mind",
-    "steward",
     "voice",
     "observer",
 ]
@@ -23,7 +21,6 @@ ALL_NAMES = [
 FACTORIES = {
     "mood": mood.make_service,
     "mind": mind.make_service,
-    "steward": steward.make_service,
     "voice": voice.make_service,
     "observer": observer.make_service,
 }

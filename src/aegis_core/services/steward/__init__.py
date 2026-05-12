@@ -1,6 +1,4 @@
-"""steward service — Plan A stub. Real implementation in Plan D."""
-from .._stub import StubService
+"""steward service — computational social restraint."""
+from .service import StewardService, make_service
 
-
-def make_service(**kwargs) -> StubService:
-    return StubService(name="steward", **kwargs)
+__all__ = ["StewardService", "make_service"]

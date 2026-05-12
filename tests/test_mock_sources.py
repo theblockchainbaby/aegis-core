@@ -62,3 +62,30 @@ async def test_mock_audio_detects_sine_burst_as_active():
     active_fraction = sum(1 for e in events if e.active) / len(events)
     # The 2-second sine sits within a 3-second file → ~66% active expected.
     assert 0.5 < active_fraction < 0.85
+
+
+import json
+import tempfile
+
+from aegis_core.services.senses.sources.mock_presence import MockPresenceSource
+
+
+@pytest.mark.asyncio
+async def test_mock_presence_replays_recorded_events():
+    trace = [
+        {"offset_ms": 0, "present": False, "confidence": 0.95},
+        {"offset_ms": 500, "present": True, "confidence": 0.97},
+        {"offset_ms": 1500, "present": True, "confidence": 0.92},
+    ]
+    with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
+        json.dump(trace, f)
+        path = f.name
+
+    src = MockPresenceSource(path)
+    events = [msg async for _, msg in src.events()]
+    await src.aclose()
+
+    assert len(events) == 3
+    assert events[0].present is False
+    assert events[1].present is True
+    assert events[1].source == "mmwave"

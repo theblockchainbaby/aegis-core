@@ -312,5 +312,80 @@ def memory_inspect(db: str, raw: bool, limit: int) -> None:
     conn.close()
 
 
+@main.group()
+def interventions() -> None:
+    """Inspect the intervention log — what the Steward almost-said."""
+
+
+@interventions.command("inspect")
+@click.option("--db", default="/tmp/aegis-memory.db", help="SQLite path.")
+@click.option("--limit", default=50, help="Items per section.")
+def interventions_inspect(db: str, limit: int) -> None:
+    """Show aired and vetoed interventions from the log."""
+    from datetime import datetime as _dt
+
+    from .storage._conn import connect as _connect
+    from .storage.interventions import InterventionStore as _IS
+    from .storage.scar_tissue import ScarTissueStore as _ST
+    from .storage.schema import run_migrations as _rm
+
+    def _hhmm(iso: str | None) -> str:
+        if not iso:
+            return "—"
+        try:
+            return _dt.fromisoformat(iso).strftime("%H:%M")
+        except Exception:
+            return iso[:16]
+
+    conn = _connect(db)
+    _rm(conn)
+    store = _IS(conn)
+    aired = store.query_aired(limit=limit)
+    vetoed = store.query_vetoed(limit=limit)
+    scar = _ST(conn).all_classes()
+
+    click.echo("── Aired ──────────────────────────────────────")
+    if not aired:
+        click.echo("  (silence)")
+    for row in aired:
+        ack = (
+            "ack" if row["acknowledged"] == 1
+            else "unack" if row["acknowledged"] == 0
+            else "—"
+        )
+        click.echo(
+            f"  {_hhmm(row['timestamp_utc'])}  {row['text']}"
+        )
+        click.echo(
+            f"    class={row['intervention_class']}  "
+            f"weight={row['weight']:.1f}  conf={row['confidence']:.2f}  {ack}"
+        )
+    click.echo("")
+
+    click.echo("── Vetoed ─────────────────────────────────────")
+    if not vetoed:
+        click.echo("  (nothing tried)")
+    for row in vetoed:
+        import json as _json
+
+        reasons = _json.loads(row["reasons_json"] or "[]")
+        click.echo(
+            f"  {_hhmm(row['timestamp_utc'])}  {row['text']}"
+        )
+        click.echo(
+            f"    class={row['intervention_class']}  "
+            f"reasons={', '.join(reasons)}"
+        )
+    click.echo("")
+
+    click.echo("── Scar tissue (per class) ────────────────────")
+    if not scar:
+        click.echo("  (none)")
+    for k, v in scar.items():
+        click.echo(f"  {k:<24s}  penalty={v:.3f}")
+
+    conn.close()
+
+
 if __name__ == "__main__":
     main()

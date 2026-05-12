@@ -27,6 +27,7 @@ from .._base import AegisService
 from .attention import AttentionSignals, StubAttentionSignals
 from .clock import Clock, SystemClock
 from .gate import GateState, evaluate
+from .recovery import SocialRecovery
 from .rules import Rules, load_rules
 from .tone_classifier import ToneClassifier
 
@@ -71,6 +72,8 @@ class StewardService(AegisService):
         self._bus: AegisBus | None = None
         self._last_aired_id: int | None = None
         self._last_aired_class: str | None = None
+        self._recovery: SocialRecovery | None = None
+        self._recovery_tick_task = None
 
     async def setup(self, bus: AegisBus) -> None:
         self._bus = bus
@@ -78,6 +81,12 @@ class StewardService(AegisService):
         self._rules = load_rules(self._rules_path)
         self._tone = ToneClassifier()
         self._silence_budget_remaining = self._rules.silence_budget.default_weight_per_day
+        self._recovery = SocialRecovery(
+            clock=self._clock,
+            timeout_seconds=self._rules.social_recovery.trigger.utterance_unacknowledged_for_seconds,
+            confidence_bump=self._rules.social_recovery.effects.confidence_threshold_bump,
+            cooldown_minutes=self._rules.social_recovery.effects.cooldown_duration_minutes,
+        )
 
         # Open DB.
         self._conn = connect(self._db_path)
@@ -90,7 +99,17 @@ class StewardService(AegisService):
             "mind.utterance_proposal", UtteranceProposal, self._on_proposal
         )
 
+        import asyncio as _asyncio
+
+        self._recovery_tick_task = _asyncio.create_task(self._recovery_tick_loop())
+
     async def teardown(self, bus: AegisBus) -> None:
+        if self._recovery_tick_task is not None:
+            self._recovery_tick_task.cancel()
+            try:
+                await self._recovery_tick_task
+            except BaseException:
+                pass
         if self._conn is not None:
             try:
                 self._conn.close()
@@ -118,7 +137,9 @@ class StewardService(AegisService):
             scar_tissue_penalty=self._scar.get_penalty(
                 str(msg.intervention_class)
             ),
-            recovery_threshold_bump=0.0,
+            recovery_threshold_bump=(
+                self._recovery.threshold_bump() if self._recovery is not None else 0.0
+            ),
         )
         decision = evaluate(
             msg,
@@ -154,6 +175,8 @@ class StewardService(AegisService):
             self._silence_budget_remaining -= decision.weight_cost
             self._utterances_today += 1
             self._last_utterance_at = now
+            if self._recovery is not None:
+                self._recovery.note_utterance(class_=str(msg.intervention_class))
         else:
             self._interventions.log_vetoed(
                 timestamp=now,
@@ -163,6 +186,15 @@ class StewardService(AegisService):
                 text=msg.text,
                 reasons=decision.reasons,
             )
+
+
+    async def _recovery_tick_loop(self) -> None:
+        import asyncio as _asyncio
+
+        while not self._shutdown.is_set():
+            await _asyncio.sleep(5)
+            if self._recovery is not None:
+                self._recovery.tick()
 
 
 def make_service(**kwargs) -> StewardService:

@@ -5,17 +5,14 @@ import pytest
 
 from aegis_core.bus import AegisBus
 from aegis_core.services import (
-    mood,
     observer,
 )
 
 ALL_NAMES = [
-    "mood",
     "observer",
 ]
 
 FACTORIES = {
-    "mood": mood.make_service,
     "observer": observer.make_service,
 }
 

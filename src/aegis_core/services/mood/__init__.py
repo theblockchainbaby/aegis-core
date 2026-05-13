@@ -1,6 +1,4 @@
-"""mood service — Plan A stub. Real implementation in Plan E."""
-from .._stub import StubService
+"""mood service — state-driven mood publisher (Plan E)."""
+from .service import MoodService, make_service
 
-
-def make_service(**kwargs) -> StubService:
-    return StubService(name="mood", **kwargs)
+__all__ = ["MoodService", "make_service"]

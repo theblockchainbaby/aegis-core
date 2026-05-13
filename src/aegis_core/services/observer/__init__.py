@@ -1,6 +1,4 @@
-"""observer service — Plan A stub. Real implementation in Plan F."""
-from .._stub import StubService
+"""observer service — localhost-only cockpit (Plan F)."""
+from .service import ObserverService, make_service
 
-
-def make_service(**kwargs) -> StubService:
-    return StubService(name="observer", **kwargs)
+__all__ = ["ObserverService", "make_service"]

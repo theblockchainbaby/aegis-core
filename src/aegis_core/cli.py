@@ -454,5 +454,52 @@ def mood_watch(nats_url: str) -> None:
         pass
 
 
+@main.command()
+@click.option("--nats-url", default="nats://127.0.0.1:4222")
+@click.option("--host", default="127.0.0.1")
+@click.option("--port", default=8080, type=int)
+@click.option("--db", default="/tmp/aegis-memory.db")
+@click.option("--schedule", default=None, help="Path to schedule.yaml (defaults to repo).")
+def observer(nats_url: str, host: str, port: int, db: str, schedule: str | None) -> None:
+    """Start the observer cockpit on http://host:port/."""
+    from .services.observer.service import ObserverService
+
+    async def run() -> None:
+        import signal as _signal
+        repo_root = Path(__file__).resolve().parent.parent.parent
+        nats_conf = repo_root / "ops" / "natsconfig" / "nats.conf"
+        nats_proc = subprocess.Popen(
+            ["nats-server", "-c", str(nats_conf)],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+
+        service = ObserverService(
+            nats_url=nats_url,
+            host=host,
+            port=port,
+            db_path=db,
+            schedule_path=schedule,
+        )
+        task = asyncio.create_task(service.run())
+        click.echo(f"Observer cockpit: http://{host}:{port}/")
+        stop = asyncio.Event()
+        loop = asyncio.get_running_loop()
+        for sig in (_signal.SIGINT, _signal.SIGTERM):
+            loop.add_signal_handler(sig, stop.set)
+        try:
+            await stop.wait()
+        finally:
+            service.shutdown()
+            await asyncio.gather(task, return_exceptions=True)
+            nats_proc.terminate()
+            try:
+                nats_proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                nats_proc.kill()
+
+    asyncio.run(run())
+
+
 if __name__ == "__main__":
     main()

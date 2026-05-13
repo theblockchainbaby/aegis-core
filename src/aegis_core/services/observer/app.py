@@ -64,4 +64,28 @@ def build_app(
             "restraint": restraint,
         }
 
+    @app.get("/api/timeline")
+    def api_timeline(
+        limit: int = 100,
+        subjects: str | None = None,
+    ) -> dict:
+        buffer: EventRingBuffer = app.state.buffer
+        if subjects:
+            wanted = {s.strip() for s in subjects.split(",") if s.strip()}
+            items = buffer.filter_subjects(wanted)
+            items = items[-limit:]
+        else:
+            items = buffer.recent(limit)
+
+        return {
+            "events": [
+                {
+                    "subject": e.subject,
+                    "timestamp": e.timestamp.isoformat(),
+                    "payload": e.payload,
+                }
+                for e in items
+            ]
+        }
+
     return app

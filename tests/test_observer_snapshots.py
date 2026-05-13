@@ -89,3 +89,29 @@ def test_snapshot_excludes_events_outside_day(tmp_path: Path):
     conn.close()
     texts = [u["text"] for u in snap["aired_utterances"]]
     assert texts == ["today"]
+
+
+@pytest.mark.asyncio
+async def test_api_snapshots_returns_specific_date(tmp_path: Path):
+    import httpx
+    from aegis_core.services.observer.app import build_app
+    from aegis_core.services.observer.ring_buffer import EventRingBuffer
+    from aegis_core.storage._conn import connect
+    from aegis_core.storage.schema import run_migrations
+
+    db = tmp_path / "m.db"
+    conn = connect(db)
+    run_migrations(conn)
+    _seed_one_aired_and_one_vetoed(conn)
+    conn.close()
+
+    app = build_app(buffer=EventRingBuffer(capacity=50), db_path=db)
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(
+        transport=transport, base_url="http://test"
+    ) as client:
+        r = await client.get("/api/snapshots/2026-05-12")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["date"] == "2026-05-12"
+    assert body["interventions"]["aired"] == 1

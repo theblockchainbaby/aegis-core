@@ -130,6 +130,28 @@ def build_app(
             ]
         }
 
+    @app.get("/api/snapshots/{date_str}")
+    def api_snapshot_for_date(date_str: str) -> dict:
+        from datetime import date as _date
+
+        from ...storage._conn import connect
+        from ...storage.schema import run_migrations
+        from .snapshots import generate_daily_snapshot
+
+        d = _date.fromisoformat(date_str)
+        db_path = app.state.db_path
+        if not db_path.exists():
+            return {
+                "date": date_str,
+                "interventions": {"aired": 0, "vetoed": 0},
+            }
+        conn = connect(db_path)
+        try:
+            run_migrations(conn)
+            return generate_daily_snapshot(d, conn)
+        finally:
+            conn.close()
+
     @app.get("/", response_class=HTMLResponse)
     def index(request: Request) -> HTMLResponse:
         # Reuse the api_now logic.

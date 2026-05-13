@@ -7,18 +7,15 @@ from aegis_core.bus import AegisBus
 from aegis_core.services import (
     mood,
     observer,
-    voice,
 )
 
 ALL_NAMES = [
     "mood",
-    "voice",
     "observer",
 ]
 
 FACTORIES = {
     "mood": mood.make_service,
-    "voice": voice.make_service,
     "observer": observer.make_service,
 }
 

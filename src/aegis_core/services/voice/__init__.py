@@ -1,6 +1,4 @@
-"""voice service — Plan A stub. Real implementation in Plan E."""
-from .._stub import StubService
+"""voice service — utterance rendering (Plan E)."""
+from .service import VoiceService, make_service
 
-
-def make_service(**kwargs) -> StubService:
-    return StubService(name="voice", **kwargs)
+__all__ = ["VoiceService", "make_service"]

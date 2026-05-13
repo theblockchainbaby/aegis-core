@@ -387,5 +387,72 @@ def interventions_inspect(db: str, limit: int) -> None:
     conn.close()
 
 
+@main.group()
+def voice() -> None:
+    """Voice service inspection."""
+
+
+@voice.command("tail")
+@click.option("--log", default="/tmp/aegis-voice.log", help="Voice log path.")
+def voice_tail(log: str) -> None:
+    """Tail the voice service log file."""
+    import time as _time
+    from pathlib import Path as _Path
+
+    p = _Path(log)
+    if not p.exists():
+        click.echo(f"(no log yet at {log})")
+        # Wait for it.
+        while not p.exists():
+            _time.sleep(0.5)
+    with open(p, "r", encoding="utf-8") as f:
+        f.seek(0, 2)  # end
+        try:
+            while True:
+                line = f.readline()
+                if line:
+                    click.echo(line.rstrip("\n"))
+                else:
+                    _time.sleep(0.25)
+        except KeyboardInterrupt:
+            pass
+
+
+@main.group()
+def mood() -> None:
+    """Mood service inspection."""
+
+
+@mood.command("watch")
+@click.option("--nats-url", default="nats://127.0.0.1:4222")
+def mood_watch(nats_url: str) -> None:
+    """Subscribe to mood.changed and print events as they arrive."""
+    from .messages import MoodChanged
+
+    async def run() -> None:
+        async with AegisBus.connect(nats_url) as bus:
+            async def on_mood(msg: MoodChanged) -> None:
+                click.echo(
+                    f"[{msg.timestamp.strftime('%H:%M:%S')}] "
+                    f"{msg.palette.value:<22s}  "
+                    f"breath={msg.breath_cadence_seconds:.1f}s  "
+                    f"warmth={msg.warmth:.2f}  ({msg.reason})"
+                )
+
+            await bus.subscribe("mood.changed", MoodChanged, on_mood)
+            await bus.flush()
+            click.echo("(watching mood.changed; Ctrl-C to stop)")
+            try:
+                while True:
+                    await asyncio.sleep(1.0)
+            except asyncio.CancelledError:
+                pass
+
+    try:
+        asyncio.run(run())
+    except KeyboardInterrupt:
+        pass
+
+
 if __name__ == "__main__":
     main()

@@ -152,10 +152,42 @@ def build_app(
         finally:
             conn.close()
 
+    @app.get("/api/dogfood")
+    def api_dogfood() -> dict:
+        from ...storage._conn import connect
+        from ...storage.interventions import InterventionStore
+        from ...storage.schema import run_migrations
+        from .dogfood import compute_dogfood_state
+
+        db_path = app.state.db_path
+        if not db_path.exists():
+            return {
+                "day_of_90": 0,
+                "started_at": None,
+                "aired_total": 0,
+                "vetoed_total": 0,
+            }
+        conn = connect(db_path)
+        try:
+            run_migrations(conn)
+            state = compute_dogfood_state(conn)
+            store = InterventionStore(conn)
+            return {
+                "day_of_90": state.day_of_90,
+                "started_at": (
+                    state.started_at.isoformat() if state.started_at else None
+                ),
+                "aired_total": store.count_aired(),
+                "vetoed_total": store.count_vetoed(),
+            }
+        finally:
+            conn.close()
+
     @app.get("/", response_class=HTMLResponse)
     def index(request: Request) -> HTMLResponse:
         # Reuse the api_now logic.
         now = api_now()
+        dogfood = api_dogfood()
         events = [
             {
                 "subject": e.subject,
@@ -173,6 +205,7 @@ def build_app(
                 "last_candidate": now["last_candidate"],
                 "restraint": now["restraint"],
                 "events": events,
+                "dogfood": dogfood,
             },
         )
 

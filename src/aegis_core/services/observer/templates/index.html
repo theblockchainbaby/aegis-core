@@ -65,6 +65,18 @@
       </p>
     </section>
 
+    <section class="dogfood">
+      <h2>Dogfood</h2>
+      {% if dogfood.day_of_90 > 0 %}
+      <p class="row">
+        <span class="label">Day</span>
+        <span class="value">{{ dogfood.day_of_90 }} of 90</span>
+      </p>
+      {% else %}
+      <p class="row muted">Dogfood mode not started. Run <code>aegis-core dogfood start</code>.</p>
+      {% endif %}
+    </section>
+
     <section class="timeline">
       <h2>Timeline</h2>
       <ol id="events" class="event-list">

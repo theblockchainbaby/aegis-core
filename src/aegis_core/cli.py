@@ -501,5 +501,28 @@ def observer(nats_url: str, host: str, port: int, db: str, schedule: str | None)
     asyncio.run(run())
 
 
+@main.group()
+def dogfood() -> None:
+    """Dogfood mode controls."""
+
+
+@dogfood.command("start")
+@click.option("--db", default="/tmp/aegis-memory.db")
+def dogfood_start(db: str) -> None:
+    """Mark today as Day 1 of the 90-day dogfood."""
+    from datetime import UTC, datetime as _dt
+
+    from .services.observer.dogfood import set_dogfood_started_at
+    from .storage._conn import connect
+    from .storage.schema import run_migrations
+
+    conn = connect(db)
+    run_migrations(conn)
+    when = _dt.now(UTC)
+    set_dogfood_started_at(conn, when)
+    conn.close()
+    click.echo(f"Dogfood started at {when.isoformat()}. Day 1 of 90.")
+
+
 if __name__ == "__main__":
     main()

@@ -1,0 +1,95 @@
+/* Aegis Core observer — anthropological / archival tone.
+   Plain typography, sparse layout, no analytics framing. */
+:root {
+  --bg: #fafaf7;
+  --fg: #222;
+  --muted: #888;
+  --rule: #ddd6cc;
+  --serif: Georgia, "Cormorant Garamond", serif;
+  --mono: "SF Mono", "Menlo", monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--serif);
+  font-size: 17px;
+  line-height: 1.5;
+}
+
+.cockpit {
+  max-width: 760px;
+  margin: 3rem auto;
+  padding: 0 2rem;
+}
+
+header {
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 1rem;
+  margin-bottom: 2rem;
+}
+
+h1 {
+  margin: 0;
+  font-weight: 400;
+  font-size: 2rem;
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  color: var(--muted);
+  margin: 0.25rem 0 0;
+}
+
+h2 {
+  font-weight: 400;
+  font-size: 1rem;
+  text-transform: lowercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin: 2rem 0 0.5rem;
+}
+
+.row {
+  display: flex;
+  gap: 1.5rem;
+  margin: 0.25rem 0;
+  align-items: baseline;
+}
+
+.label {
+  flex: 0 0 9rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.value {
+  flex: 1;
+}
+
+.muted {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.event-list {
+  list-style: none;
+  padding: 0;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+}
+
+.event-list li {
+  display: flex;
+  gap: 1rem;
+  padding: 0.15rem 0;
+  border-bottom: 1px dotted var(--rule);
+}
+
+.event-list time {
+  flex: 0 0 5rem;
+  color: var(--muted);
+}

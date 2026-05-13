@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Aegis Core — Observer</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+  <main class="cockpit">
+    <header>
+      <h1>Aegis Core</h1>
+      <p class="subtitle">Observer — field notes of a quiet organism.</p>
+    </header>
+
+    <section class="now">
+      <h2>Now</h2>
+      {% if state %}
+      <p class="row">
+        <span class="label">Presence</span>
+        <span class="value">{{ state.current }}</span>
+      </p>
+      {% else %}
+      <p class="row muted">No presence state recorded yet.</p>
+      {% endif %}
+
+      {% if mood %}
+      <p class="row">
+        <span class="label">Mood</span>
+        <span class="value">
+          {{ mood.palette }} · breath {{ mood.breath_cadence_seconds }}s · warmth {{ mood.warmth }}
+        </span>
+      </p>
+      {% endif %}
+    </section>
+
+    <section class="recent">
+      <h2>Recent</h2>
+      {% if last_utterance %}
+      <p class="row">
+        <span class="label">Last utterance</span>
+        <span class="value">"{{ last_utterance.text }}"</span>
+      </p>
+      {% else %}
+      <p class="row muted">(silence)</p>
+      {% endif %}
+
+      {% if last_candidate %}
+      <p class="row">
+        <span class="label">Last candidate</span>
+        <span class="value">{{ last_candidate.moment_id }}</span>
+      </p>
+      {% endif %}
+    </section>
+
+    <section class="restraint">
+      <h2>Restraint</h2>
+      <p class="row">
+        <span class="label">Aired (total)</span>
+        <span class="value">{{ restraint.aired_total }}</span>
+      </p>
+      <p class="row">
+        <span class="label">Vetoed (total)</span>
+        <span class="value">{{ restraint.vetoed_total }}</span>
+      </p>
+    </section>
+
+    <section class="timeline">
+      <h2>Timeline</h2>
+      <ol id="events" class="event-list">
+        {% for event in events %}
+        <li>
+          <time>{{ event.timestamp[11:19] }}</time>
+          <span class="event-subject">{{ event.subject }}</span>
+        </li>
+        {% endfor %}
+      </ol>
+    </section>
+  </main>
+</body>
+</html>

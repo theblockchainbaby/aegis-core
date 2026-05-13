@@ -8,7 +8,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 
 from .ring_buffer import EventRingBuffer
 
@@ -21,6 +24,15 @@ def build_app(
     app = FastAPI(title="Aegis Core Observer", version="0.1.0")
     app.state.buffer = buffer
     app.state.db_path = Path(db_path)
+
+    here = Path(__file__).resolve().parent
+    app.mount(
+        "/static",
+        StaticFiles(directory=str(here / "static")),
+        name="static",
+    )
+    templates = Jinja2Templates(directory=str(here / "templates"))
+    app.state.templates = templates
 
     @app.get("/healthz")
     def healthz() -> dict[str, str]:
@@ -87,5 +99,29 @@ def build_app(
                 for e in items
             ]
         }
+
+    @app.get("/", response_class=HTMLResponse)
+    def index(request: Request) -> HTMLResponse:
+        # Reuse the api_now logic.
+        now = api_now()
+        events = [
+            {
+                "subject": e.subject,
+                "timestamp": e.timestamp.isoformat(),
+            }
+            for e in app.state.buffer.recent(50)
+        ]
+        return templates.TemplateResponse(
+            request,
+            "index.html",
+            {
+                "state": now["state"],
+                "mood": now["mood"],
+                "last_utterance": now["last_utterance"],
+                "last_candidate": now["last_candidate"],
+                "restraint": now["restraint"],
+                "events": events,
+            },
+        )
 
     return app

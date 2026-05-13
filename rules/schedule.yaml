@@ -1,0 +1,7 @@
+# Plan F scheduler config. Human-editable; restart observer to apply.
+# All times are local 24h.
+
+morning_reflection: "09:00"
+evening_reflection: "18:00"
+quiet_hours_start: "22:00"
+quiet_hours_end: "07:00"

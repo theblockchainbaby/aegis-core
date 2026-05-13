@@ -85,13 +85,15 @@ class ObserverService(AegisService):
                 pass
 
     async def _append(self, subject: str, msg) -> None:
-        self._buffer.append(
-            BufferedEvent(
-                subject=subject,
-                timestamp=datetime.now(UTC),
-                payload=msg.model_dump(mode="json"),
-            )
+        event = BufferedEvent(
+            subject=subject,
+            timestamp=datetime.now(UTC),
+            payload=msg.model_dump(mode="json"),
         )
+        self._buffer.append(event)
+        # Push to SSE clients.
+        from .app import broadcast_event
+        await broadcast_event(self._app, event)
 
     async def _on_state(self, msg: StateChanged) -> None:
         await self._append("state.changed", msg)

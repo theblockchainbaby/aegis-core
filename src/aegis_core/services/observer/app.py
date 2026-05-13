@@ -6,14 +6,17 @@ state.
 """
 from __future__ import annotations
 
+import asyncio
+import json
+from collections.abc import AsyncIterator
 from pathlib import Path
 
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from .ring_buffer import EventRingBuffer
+from .ring_buffer import BufferedEvent, EventRingBuffer
 
 
 def build_app(
@@ -33,6 +36,33 @@ def build_app(
     )
     templates = Jinja2Templates(directory=str(here / "templates"))
     app.state.templates = templates
+    app.state.sse_queues: list[asyncio.Queue] = []
+
+    @app.get("/sse/events")
+    async def sse_events() -> StreamingResponse:
+        async def stream() -> AsyncIterator[bytes]:
+            q: asyncio.Queue = asyncio.Queue(maxsize=200)
+            app.state.sse_queues.append(q)
+            try:
+                while True:
+                    event: BufferedEvent = await q.get()
+                    payload = {
+                        "subject": event.subject,
+                        "timestamp": event.timestamp.isoformat(),
+                        "payload": event.payload,
+                    }
+                    yield f"data: {json.dumps(payload)}\n\n".encode()
+            finally:
+                try:
+                    app.state.sse_queues.remove(q)
+                except ValueError:
+                    pass
+
+        return StreamingResponse(
+            stream(),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
 
     @app.get("/healthz")
     def healthz() -> dict[str, str]:
@@ -125,3 +155,14 @@ def build_app(
         )
 
     return app
+
+
+async def broadcast_event(app, event: "BufferedEvent") -> None:
+    """Push event to all SSE-connected clients. Service calls this from
+    the bus subscriber callbacks (Task 8 wires that)."""
+    for q in list(app.state.sse_queues):
+        try:
+            q.put_nowait(event)
+        except asyncio.QueueFull:
+            # Slow consumer; drop.
+            pass

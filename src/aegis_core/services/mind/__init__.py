@@ -1,4 +1,4 @@
-"""mind service — Plan D mock; real implementation in Plan E."""
-from .mock_mind import MockMindService, ProposalRecipe, make_service
+"""mind service — cognition router (real implementation; Plan E)."""
+from .service import MindService, make_service
 
-__all__ = ["MockMindService", "ProposalRecipe", "make_service"]
+__all__ = ["MindService", "make_service"]

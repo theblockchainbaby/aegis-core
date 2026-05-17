@@ -1,5 +1,4 @@
 from aegis_core.services.senses.sources.host_activity_reader import (
-    ActivityDecision,
     ActivityReading,
     ActivityThresholds,
     decide,

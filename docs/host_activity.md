@@ -18,6 +18,12 @@ real measurement instead of a clock.
   Seconds since the last keyboard or mouse event.
 - The frontmost application name, via AppKit `NSWorkspace`.
 
+Idle seconds is the only signal that currently drives a decision. The
+frontmost app name is captured and carried through `ActivityReading` and
+`ActivityDecision`, but `to_messages` does not yet act on it. It is
+groundwork for a future posture refinement and has no effect on presence
+or engagement today.
+
 It does not read window titles or keystroke content. Those would need
 macOS Accessibility permission and would capture what York is reading.
 Out of scope by design.

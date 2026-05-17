@@ -49,3 +49,17 @@ def test_ambient_light_roundtrip():
 def test_thermal_roundtrip():
     msg = ThermalReading(timestamp=datetime.now(UTC), celsius=46.2)
     assert ThermalReading.model_validate_json(msg.model_dump_json()) == msg
+
+
+def test_presence_observed_accepts_host_input_source():
+    from datetime import UTC, datetime
+
+    from aegis_core.messages import PresenceObserved
+
+    msg = PresenceObserved(
+        timestamp=datetime.now(UTC),
+        present=True,
+        source="host_input",
+        confidence=1.0,
+    )
+    assert msg.source == "host_input"

@@ -15,7 +15,7 @@ class PresenceObserved(AegisMessage):
     """Person-present signal from a perception source."""
 
     present: bool
-    source: Literal["mmwave", "camera", "audio_vad"]
+    source: Literal["mmwave", "camera", "audio_vad", "host_input"]
     confidence: float = Field(ge=0.0, le=1.0)
 
 

@@ -44,6 +44,21 @@ SERVICE_FACTORIES = {
 }
 
 
+def _make_service_for(name, factory, nats_url, platform=None):
+    """Construct one service for aegis-core up.
+
+    On macOS the senses service is given the HostActivitySource so the
+    organism has a real perceptual input. Every other service, and the
+    senses service on any non macOS host, is built unchanged.
+    """
+    plat = platform if platform is not None else sys.platform
+    if name == "senses" and plat == "darwin":
+        from .services.senses.sources.host_activity import HostActivitySource
+
+        return factory(nats_url=nats_url, sources=[HostActivitySource()])
+    return factory(nats_url=nats_url)
+
+
 @click.group()
 def main() -> None:
     """aegis-core dev CLI."""
@@ -63,7 +78,10 @@ def up(nats_url: str) -> None:
     click.echo(f"NATS server started (pid={nats_proc.pid})")
 
     async def run_all() -> None:
-        services = [factory(nats_url=nats_url) for factory in SERVICE_FACTORIES.values()]
+        services = [
+            _make_service_for(name, factory, nats_url)
+            for name, factory in SERVICE_FACTORIES.items()
+        ]
         tasks = [asyncio.create_task(s.run()) for s in services]
 
         loop = asyncio.get_running_loop()

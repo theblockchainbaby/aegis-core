@@ -7,6 +7,10 @@ and whether he is actively engaged. Fully testable on any platform.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
+
+from ....messages import PostureObserved, PresenceObserved
+from ....messages._base import AegisMessage
 
 
 @dataclass(frozen=True)
@@ -54,3 +58,37 @@ def decide(
         engaged=engaged,
         frontmost_app=reading.frontmost_app,
     )
+
+
+def to_messages(
+    decision: ActivityDecision, now: datetime
+) -> list[tuple[str, AegisMessage]]:
+    """Translate a decision into the bus messages the state machine reads.
+
+    Emits one PresenceObserved on senses.presence and one PostureObserved
+    on senses.posture. gaze is screen when engaged, away when present but
+    idle, absent when stepped away.
+    """
+    if decision.engaged:
+        gaze = "screen"
+    elif decision.present:
+        gaze = "away"
+    else:
+        gaze = "absent"
+
+    presence = PresenceObserved(
+        timestamp=now,
+        present=decision.present,
+        source="host_input",
+        confidence=1.0,
+    )
+    posture = PostureObserved(
+        timestamp=now,
+        at_desk=decision.present,
+        gaze=gaze,
+        movement_score=1.0 if decision.engaged else 0.0,
+    )
+    return [
+        ("senses.presence", presence),
+        ("senses.posture", posture),
+    ]

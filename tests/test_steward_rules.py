@@ -4,7 +4,6 @@ import pytest
 
 from aegis_core.services.steward.rules import Rules, load_rules
 
-
 REPO_RULES = (
     Path(__file__).resolve().parent.parent / "rules" / "intervention.yaml"
 )

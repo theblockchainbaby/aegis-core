@@ -1,4 +1,4 @@
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -49,6 +49,7 @@ def test_day_count_caps_at_90(tmp_path: Path):
 @pytest.mark.asyncio
 async def test_api_dogfood_endpoint(tmp_path: Path):
     import httpx
+
     from aegis_core.services.observer.app import build_app
     from aegis_core.services.observer.ring_buffer import EventRingBuffer
 

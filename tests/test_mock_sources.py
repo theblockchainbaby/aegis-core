@@ -5,7 +5,6 @@ import pytest
 
 from aegis_core.services.senses.sources.mock_camera import MockCameraSource
 
-
 FIXTURE_DIR = Path(__file__).parent / "fixtures" / "camera_frames"
 
 
@@ -38,7 +37,6 @@ async def test_mock_camera_uses_sidecar_metadata():
 
 
 from aegis_core.services.senses.sources.mock_audio import MockAudioSource
-
 
 AUDIO_DIR = Path(__file__).parent / "fixtures" / "audio"
 

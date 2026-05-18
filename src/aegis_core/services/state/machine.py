@@ -6,7 +6,6 @@ service in service.py wraps this with NATS plumbing.
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Optional
 
 from ...messages import (
     AmbientLightReading,
@@ -16,7 +15,7 @@ from ...messages import (
     StateChanged,
     VoiceActivityDetected,
 )
-from .rules import ALLOWED_DIRECT, MIN_DWELL_MS, is_allowed
+from .rules import MIN_DWELL_MS, is_allowed
 
 _DARK_LUX_THRESHOLD = 5.0
 _DARK_TICKS_FOR_SLEEP = 3
@@ -62,7 +61,7 @@ class PresenceStateMachine:
         self,
         to_state: PresenceState,
         reason: str,
-    ) -> Optional[StateChanged]:
+    ) -> StateChanged | None:
         """Attempt a transition. Honors dwell minimums and allowed-edges table.
 
         If a direct transition isn't allowed but Settling is, route through
@@ -81,7 +80,7 @@ class PresenceStateMachine:
 
         return None
 
-    def elapse(self) -> Optional[StateChanged]:
+    def elapse(self) -> StateChanged | None:
         """Called periodically by the service tick. Handles auto-expirations.
 
         - Quiet → Observing after Quiet dwell.
@@ -90,13 +89,16 @@ class PresenceStateMachine:
         For Plan B we only auto-expire Quiet → Observing here. Settling
         return is handled by the service tracking the requested target.
         """
-        if self._state == PresenceState.QUIET and self._dwell_ms >= MIN_DWELL_MS[PresenceState.QUIET]:
+        if (
+            self._state == PresenceState.QUIET
+            and self._dwell_ms >= MIN_DWELL_MS[PresenceState.QUIET]
+        ):
             return self._make_transition(PresenceState.OBSERVING, "quiet_expired")
         return None
 
     # --- event ingestors ---
 
-    def observe_presence(self, msg: PresenceObserved) -> Optional[StateChanged]:
+    def observe_presence(self, msg: PresenceObserved) -> StateChanged | None:
         if msg.present:
             if self._state == PresenceState.DORMANT:
                 return self.request_transition(PresenceState.OBSERVING, "presence_detected")
@@ -106,18 +108,18 @@ class PresenceStateMachine:
                 return self.request_transition(PresenceState.DORMANT, "presence_lost")
             return None
 
-    def observe_posture(self, msg: PostureObserved) -> Optional[StateChanged]:
+    def observe_posture(self, msg: PostureObserved) -> StateChanged | None:
         if msg.at_desk and msg.gaze == "screen":
             if self._state == PresenceState.OBSERVING:
                 return self.request_transition(PresenceState.ATTENTIVE, "engagement_detected")
         return None
 
-    def observe_voice(self, msg: VoiceActivityDetected) -> Optional[StateChanged]:
+    def observe_voice(self, msg: VoiceActivityDetected) -> StateChanged | None:
         # Plan B: voice activity informs the steward (later plans). The state
         # machine itself doesn't transition on voice in v1.
         return None
 
-    def observe_ambient_light(self, msg: AmbientLightReading) -> Optional[StateChanged]:
+    def observe_ambient_light(self, msg: AmbientLightReading) -> StateChanged | None:
         if msg.lux < _DARK_LUX_THRESHOLD:
             self._dark_streak += 1
         else:

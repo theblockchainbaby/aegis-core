@@ -19,6 +19,7 @@ def _ev(subject: str, t: int) -> BufferedEvent:
 @pytest.mark.asyncio
 async def test_timeline_returns_recent_events(tmp_path: Path):
     import httpx
+
     from aegis_core.services.observer.app import build_app
 
     buf = EventRingBuffer(capacity=100)
@@ -39,6 +40,7 @@ async def test_timeline_returns_recent_events(tmp_path: Path):
 @pytest.mark.asyncio
 async def test_timeline_filters_by_subjects(tmp_path: Path):
     import httpx
+
     from aegis_core.services.observer.app import build_app
 
     buf = EventRingBuffer(capacity=100)
@@ -63,6 +65,7 @@ async def test_timeline_filters_by_subjects(tmp_path: Path):
 @pytest.mark.asyncio
 async def test_timeline_defaults_to_100(tmp_path: Path):
     import httpx
+
     from aegis_core.services.observer.app import build_app
 
     buf = EventRingBuffer(capacity=200)

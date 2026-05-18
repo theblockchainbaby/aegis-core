@@ -9,7 +9,6 @@ production uses 1.0 (real-time).
 from __future__ import annotations
 
 import asyncio
-import time
 
 import structlog
 

@@ -1,6 +1,5 @@
 """Shared pytest fixtures."""
 import asyncio
-import os
 import socket
 import subprocess
 import time

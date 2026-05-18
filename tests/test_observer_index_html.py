@@ -9,6 +9,7 @@ from aegis_core.services.observer.ring_buffer import BufferedEvent, EventRingBuf
 @pytest.mark.asyncio
 async def test_index_page_renders(tmp_path: Path):
     import httpx
+
     from aegis_core.services.observer.app import build_app
 
     app = build_app(
@@ -31,6 +32,7 @@ async def test_index_page_renders(tmp_path: Path):
 @pytest.mark.asyncio
 async def test_index_page_renders_current_state_when_present(tmp_path: Path):
     import httpx
+
     from aegis_core.services.observer.app import build_app
 
     buf = EventRingBuffer(capacity=50)
@@ -55,6 +57,7 @@ async def test_index_page_renders_current_state_when_present(tmp_path: Path):
 @pytest.mark.asyncio
 async def test_static_css_serves(tmp_path: Path):
     import httpx
+
     from aegis_core.services.observer.app import build_app
 
     app = build_app(

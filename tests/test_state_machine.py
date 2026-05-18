@@ -1,12 +1,8 @@
 from datetime import UTC, datetime
 
-import pytest
-
 from aegis_core.messages import (
-    PostureObserved,
     PresenceObserved,
     PresenceState,
-    VoiceActivityDetected,
 )
 from aegis_core.services.state.machine import PresenceStateMachine
 from aegis_core.services.state.rules import MIN_DWELL_MS

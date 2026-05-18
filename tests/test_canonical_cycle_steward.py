@@ -18,7 +18,6 @@ from aegis_core.storage._conn import connect
 from aegis_core.storage.interventions import InterventionStore
 from aegis_core.storage.schema import run_migrations
 
-
 REPO_RULES = (
     Path(__file__).resolve().parent.parent / "rules" / "intervention.yaml"
 )

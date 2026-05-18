@@ -16,7 +16,6 @@ from .claude_client import ClaudeClient
 from .local_generator import GeneratorContext, generate_local_proposal
 from .redaction import redact_for_cloud
 
-
 _MEMORY_MAGIC_WEIGHT = 1.0
 
 

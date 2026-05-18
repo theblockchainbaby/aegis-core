@@ -1,10 +1,9 @@
 import sys
-import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from brain_reverie import ReverieMonitor, REVERIE_TIMEOUT_MS
+from brain_reverie import REVERIE_TIMEOUT_MS, ReverieMonitor
 
 
 def test_no_reverie_when_frames_recent():

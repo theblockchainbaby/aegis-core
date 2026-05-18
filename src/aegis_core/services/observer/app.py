@@ -212,7 +212,7 @@ def build_app(
     return app
 
 
-async def broadcast_event(app, event: "BufferedEvent") -> None:
+async def broadcast_event(app, event: BufferedEvent) -> None:
     """Push event to all SSE-connected clients. Service calls this from
     the bus subscriber callbacks (Task 8 wires that)."""
     for q in list(app.state.sse_queues):

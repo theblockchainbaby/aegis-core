@@ -18,7 +18,6 @@ from aegis_core.services.senses.service import SensesService
 from aegis_core.services.senses.sources.trace import TraceRunner
 from aegis_core.services.state.service import StateService
 
-
 FIXTURE = (
     Path(__file__).parent / "fixtures" / "traces" / "canonical_cycle.json"
 )

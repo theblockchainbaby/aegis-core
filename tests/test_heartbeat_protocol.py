@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "firmware" / "heartbeat"))
-from uart_link import OPCODE_SET_STATE, decode_frame  # noqa: E402
+from uart_link import OPCODE_SET_STATE, decode_frame
 
 from aegis_core.bus import AegisBus
 from aegis_core.messages import PresenceState, StateChanged

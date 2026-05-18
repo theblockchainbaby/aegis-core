@@ -18,6 +18,7 @@ def test_app_constructs_without_args(tmp_path: Path):
 @pytest.mark.asyncio
 async def test_healthz_returns_ok(tmp_path: Path):
     import httpx
+
     from aegis_core.services.observer.app import build_app
     from aegis_core.services.observer.ring_buffer import EventRingBuffer
 
@@ -42,6 +43,7 @@ from aegis_core.services.observer.ring_buffer import BufferedEvent
 @pytest.mark.asyncio
 async def test_api_now_returns_latest_state_and_mood(tmp_path: Path):
     import httpx
+
     from aegis_core.services.observer.app import build_app
     from aegis_core.services.observer.ring_buffer import EventRingBuffer
 
@@ -82,6 +84,7 @@ async def test_api_now_returns_latest_state_and_mood(tmp_path: Path):
 @pytest.mark.asyncio
 async def test_api_now_returns_latest_utterance_and_candidate(tmp_path: Path):
     import httpx
+
     from aegis_core.services.observer.app import build_app
     from aegis_core.services.observer.ring_buffer import EventRingBuffer
 
@@ -126,6 +129,7 @@ async def test_api_now_returns_latest_utterance_and_candidate(tmp_path: Path):
 async def test_api_now_returns_intervention_counts_from_db(tmp_path: Path):
     """Counts come from InterventionStore — seeded directly in this test."""
     import httpx
+
     from aegis_core.services.observer.app import build_app
     from aegis_core.services.observer.ring_buffer import EventRingBuffer
     from aegis_core.storage._conn import connect

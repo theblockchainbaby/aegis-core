@@ -44,8 +44,8 @@ class SensesService(AegisService):
 
         tasks = [asyncio.create_task(pump(s)) for s in self._sources]
         try:
-            done, pending = await asyncio.wait(
-                tasks + [asyncio.create_task(self._shutdown.wait())],
+            _done, pending = await asyncio.wait(
+                [*tasks, asyncio.create_task(self._shutdown.wait())],
                 return_when=asyncio.FIRST_COMPLETED,
             )
             for t in pending:

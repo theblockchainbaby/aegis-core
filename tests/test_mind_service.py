@@ -83,6 +83,7 @@ async def test_mind_retrieves_existing_consolidated_moment_on_reflective(
     Critical: keeper runs nightly, but reflective cognition is runtime.
     """
     from datetime import timedelta
+
     from aegis_core.storage._conn import connect
     from aegis_core.storage.moments import MomentStore
     from aegis_core.storage.schema import run_migrations
@@ -156,6 +157,7 @@ async def test_mind_prefers_fresh_event_over_retrieval(
     the current cycle).
     """
     from datetime import timedelta
+
     from aegis_core.storage._conn import connect
     from aegis_core.storage.moments import MomentStore
     from aegis_core.storage.schema import run_migrations

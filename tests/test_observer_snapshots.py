@@ -1,5 +1,5 @@
 import json
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 import pytest
@@ -94,6 +94,7 @@ def test_snapshot_excludes_events_outside_day(tmp_path: Path):
 @pytest.mark.asyncio
 async def test_api_snapshots_returns_specific_date(tmp_path: Path):
     import httpx
+
     from aegis_core.services.observer.app import build_app
     from aegis_core.services.observer.ring_buffer import EventRingBuffer
     from aegis_core.storage._conn import connect

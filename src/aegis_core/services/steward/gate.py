@@ -33,7 +33,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING
 
-from ...messages import InterventionClass, PresenceState, UtteranceProposal
+from ...messages import PresenceState, UtteranceProposal
 from .attention import AttentionSignals
 from .clock import Clock
 from .tone_classifier import ToneClassifier
@@ -66,7 +66,7 @@ def evaluate(
     proposal: UtteranceProposal,
     state: GateState,
     *,
-    rules: "Rules",
+    rules: Rules,
     tone: ToneClassifier,
     signals: AttentionSignals,
     clock: Clock,

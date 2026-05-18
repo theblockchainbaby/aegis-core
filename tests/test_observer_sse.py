@@ -4,9 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from aegis_core.services.observer.app import build_app, broadcast_event
+from aegis_core.services.observer.app import broadcast_event, build_app
 from aegis_core.services.observer.ring_buffer import BufferedEvent, EventRingBuffer
-
 
 
 @pytest.mark.asyncio
@@ -71,13 +70,14 @@ async def test_sse_delivers_pushed_event(tmp_path: Path):
 @pytest.mark.timeout(15)
 async def test_service_publishes_to_sse_on_bus_event(nats_server, tmp_path: Path):
     """The full chain: bus → observer service → ring buffer → SSE → client."""
+    # Spin up the service on a random port.
+    import socket
+
     import httpx
+
     from aegis_core.bus import AegisBus
     from aegis_core.messages import PresenceState, StateChanged
     from aegis_core.services.observer.service import ObserverService
-
-    # Spin up the service on a random port.
-    import socket
     s = socket.socket()
     s.bind(("127.0.0.1", 0))
     port = s.getsockname()[1]

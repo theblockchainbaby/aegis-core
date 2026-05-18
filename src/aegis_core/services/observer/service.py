@@ -104,7 +104,7 @@ class ObserverService(AegisService):
         if self._uvicorn_task is not None:
             try:
                 await asyncio.wait_for(self._uvicorn_task, timeout=5.0)
-            except (asyncio.TimeoutError, asyncio.CancelledError):
+            except (TimeoutError, asyncio.CancelledError):
                 pass
 
     async def _append(self, subject: str, msg) -> None:

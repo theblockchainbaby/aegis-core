@@ -12,7 +12,7 @@ adjusting these thresholds based on what feels right in the observer log.
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 
 MIN_DURATION_S_FOR_CONSOLIDATE = 30.0
 FOCUS_THRESHOLD = 0.5

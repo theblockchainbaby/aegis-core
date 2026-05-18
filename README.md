@@ -2,10 +2,8 @@
 
 The Desk Companion. An attempt at *ambient cognitive presence* — not an assistant.
 
-**Status:** v1 in active build. Spec is in the partner repo at
-`/Users/york/claude-ear/docs/superpowers/specs/2026-05-10-aegis-core-v1-design.md`.
-
-**Build plan:** see `/Users/york/claude-ear/docs/superpowers/plans/`.
+**Status:** v1 in active build, dogfooded daily. Raw field notes live in
+`dogfood/observations.md`. The design is documented under `docs/`.
 
 ## Design discipline
 

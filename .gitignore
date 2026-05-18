@@ -36,6 +36,12 @@ firmware/heartbeat/build/
 hardware/pcb/output/
 hardware/shell/output/
 
+# Vendor research material (third party datasheets, scraped specs)
+hardware/shell/spec_research/
+
+# Build scaffolding
+docs/superpowers/
+
 # Secrets
 .env
 .env.local

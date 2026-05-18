@@ -5,7 +5,6 @@ Dev-only. On the Jetson, services are managed by systemd (see ops/systemd/).
 from __future__ import annotations
 
 import asyncio
-import os
 import signal
 import subprocess
 import sys
@@ -303,8 +302,8 @@ def memory_inspect(db: str, raw: bool, limit: int) -> None:
         start = _hhmm(m["started_at_utc"])
         end = _hhmm(m["ended_at_utc"])
         summary = m["summary"] or "(no summary)"
-        click.echo(f"  {start}–{end}  {summary}")
-        click.echo(f"    state: consolidated")
+        click.echo(f"  {start} to {end}  {summary}")
+        click.echo("    state: consolidated")
     click.echo("")
 
     click.echo(
@@ -423,7 +422,7 @@ def voice_tail(log: str) -> None:
         # Wait for it.
         while not p.exists():
             _time.sleep(0.5)
-    with open(p, "r", encoding="utf-8") as f:
+    with open(p, encoding="utf-8") as f:
         f.seek(0, 2)  # end
         try:
             while True:
@@ -528,7 +527,8 @@ def dogfood() -> None:
 @click.option("--db", default="/tmp/aegis-memory.db")
 def dogfood_start(db: str) -> None:
     """Mark today as Day 1 of the 90-day dogfood."""
-    from datetime import UTC, datetime as _dt
+    from datetime import UTC
+    from datetime import datetime as _dt
 
     from .services.observer.dogfood import set_dogfood_started_at
     from .storage._conn import connect

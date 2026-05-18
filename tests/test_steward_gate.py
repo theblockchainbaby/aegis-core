@@ -17,7 +17,6 @@ from aegis_core.services.steward.gate import GateState, evaluate
 from aegis_core.services.steward.rules import load_rules
 from aegis_core.services.steward.tone_classifier import ToneClassifier
 
-
 REPO_RULES = (
     Path(__file__).resolve().parent.parent / "rules" / "intervention.yaml"
 )

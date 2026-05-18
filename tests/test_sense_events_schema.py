@@ -54,7 +54,6 @@ def test_thermal_roundtrip():
 def test_presence_observed_accepts_host_input_source():
     from datetime import UTC, datetime
 
-    from aegis_core.messages import PresenceObserved
 
     msg = PresenceObserved(
         timestamp=datetime.now(UTC),

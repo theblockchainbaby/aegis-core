@@ -54,4 +54,20 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "ASYNC", "S", "RUF"]
-ignore = ["S101"]  # allow `assert` in tests
+ignore = [
+  "S101",  # assert is fine in tests
+  "S108",  # local-first dev tool: memory DB and voice log default to /tmp, overridable via --db
+  "S110",  # try/except/pass is intentional on best-effort teardown and flush paths
+  "S603",  # the dev CLI launches a known local nats-server, never untrusted input
+  "S607",  # nats-server and uv are resolved from PATH on purpose
+]
+
+[tool.ruff.lint.per-file-ignores]
+# dev CLI: blocking startup work and a Ctrl-C wait loop are intentional
+"src/aegis_core/cli.py" = ["ASYNC110", "ASYNC220", "ASYNC240"]
+# StdoutBackend appends one line to a local dev log
+"src/aegis_core/services/voice/backend.py" = ["ASYNC230"]
+# test code conventions: imports after fixtures, throwaway locals, port-probe sockets
+"tests/**" = ["E402", "E501", "E741", "F841", "RUF003", "ASYNC220"]
+# Blender CAD scripts: run inside Blender, compact geometry style, bpy imported after setup
+"hardware/**" = ["E402", "E501", "E702", "RUF003"]

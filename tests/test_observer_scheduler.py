@@ -1,15 +1,11 @@
 from datetime import UTC, datetime
 from pathlib import Path
 
-import pytest
-
 from aegis_core.services.observer.scheduler import (
     ScheduleConfig,
     Scheduler,
-    ScheduledTrigger,
     load_schedule,
 )
-
 
 REPO_SCHEDULE = (
     Path(__file__).resolve().parent.parent / "rules" / "schedule.yaml"

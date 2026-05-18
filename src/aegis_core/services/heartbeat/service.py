@@ -19,14 +19,12 @@ import structlog
 # framing module. Plan F will lift this into src/.
 sys.path.insert(0, str(Path(__file__).resolve().parents[4] / "firmware" / "heartbeat"))
 
+from privacy_state import STATE_ORDINALS
 from uart_link import (
     OPCODE_HEARTBEAT,
     OPCODE_SET_STATE,
-    decode_frame,
     encode_frame,
-    FrameError,
 )
-from privacy_state import STATE_ORDINALS  # noqa: E402
 
 from ...bus import AegisBus
 from ...messages import StateChanged

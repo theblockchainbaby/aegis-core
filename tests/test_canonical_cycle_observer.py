@@ -10,7 +10,6 @@ import pytest
 
 from aegis_core.bus import AegisBus
 from aegis_core.messages import (
-    InterventionClass,
     PresenceState,
     StateChanged,
 )
@@ -24,7 +23,6 @@ from aegis_core.services.voice.service import VoiceService
 from aegis_core.storage._conn import connect
 from aegis_core.storage.moments import MomentStore
 from aegis_core.storage.schema import run_migrations
-
 
 REPO_RULES = (
     Path(__file__).resolve().parent.parent / "rules" / "intervention.yaml"

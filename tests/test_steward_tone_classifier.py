@@ -1,6 +1,5 @@
 from aegis_core.services.steward.tone_classifier import (
     ToneClassifier,
-    ToneVerdict,
 )
 
 

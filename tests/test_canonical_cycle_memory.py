@@ -14,7 +14,6 @@ from aegis_core.storage._conn import connect
 from aegis_core.storage.moments import MomentStore
 from aegis_core.storage.schema import run_migrations
 
-
 FIXTURE = (
     Path(__file__).parent / "fixtures" / "traces" / "canonical_cycle.json"
 )

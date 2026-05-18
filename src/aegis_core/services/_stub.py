@@ -1,7 +1,7 @@
 """Reusable skeleton that answers ping/pong on its own subject.
 
 Used by Plan A to wire all nine services into the bus without giving any of
-them real behavior yet. Plans B–F replace these stubs one at a time.
+them real behavior yet. Plans B through F replace these stubs one at a time.
 """
 from __future__ import annotations
 

@@ -15,7 +15,6 @@ from pathlib import Path
 from ....messages import VoiceActivityDetected
 from ....messages._base import AegisMessage
 
-
 WINDOW_MS = 100
 ACTIVITY_RMS_DB_THRESHOLD = -36.0  # below this we call it inactive
 

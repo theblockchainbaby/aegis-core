@@ -7,14 +7,13 @@ scar tissue are added in Tasks 11 + 12.
 """
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime
 from pathlib import Path
 
 import structlog
 
 from ...bus import AegisBus
 from ...messages import (
-    InterventionClass,
     PresenceState,
     StateChanged,
     UtteranceProposal,
@@ -26,8 +25,8 @@ from ...storage.schema import run_migrations
 from .._base import AegisService
 from .attention import AttentionSignals, StubAttentionSignals
 from .clock import Clock, SystemClock
-from .gate import GateState, evaluate
 from .decay import PresenceDecay
+from .gate import GateState, evaluate
 from .recovery import SocialRecovery
 from .rules import Rules, load_rules
 from .tone_classifier import ToneClassifier

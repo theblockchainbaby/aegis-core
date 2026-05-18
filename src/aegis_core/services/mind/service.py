@@ -30,7 +30,6 @@ from ...messages import (
     InterventionClass,
     PresenceState,
     StateChanged,
-    UtteranceProposal,
 )
 from ...storage._conn import connect
 from ...storage.moments import MomentStore

@@ -16,7 +16,6 @@ from aegis_core.storage._conn import connect
 from aegis_core.storage.scar_tissue import ScarTissueStore
 from aegis_core.storage.schema import run_migrations
 
-
 REPO_RULES = (
     Path(__file__).resolve().parent.parent / "rules" / "intervention.yaml"
 )

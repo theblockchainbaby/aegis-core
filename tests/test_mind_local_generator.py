@@ -1,4 +1,4 @@
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 
 from aegis_core.messages import InterventionClass, PresenceState
 from aegis_core.services.mind.local_generator import (

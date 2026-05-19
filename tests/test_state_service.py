@@ -101,3 +101,45 @@ async def test_state_service_completes_settling_to_attentive(nats_server):
     transitions = [(m.previous, m.current) for m in received]
     # Expect the service to auto-leave Settling (i.e. emit a SETTLING → X transition).
     assert any(prev == PresenceState.SETTLING for prev, _ in transitions), transitions
+
+
+@pytest.mark.asyncio
+@pytest.mark.timeout(15)
+async def test_state_service_descends_to_dormant_when_presence_lost(nats_server):
+    """A stream of present=False readings must carry the organism down to
+    DORMANT, not bounce it back to ATTENTIVE. This is the settling fix."""
+    received: list[StateChanged] = []
+
+    async def collect(msg: StateChanged) -> None:
+        received.append(msg)
+
+    async with AegisBus.connect(nats_server) as listener:
+        await listener.subscribe("state.changed", StateChanged, collect)
+
+        service = StateService(nats_url=nats_server, tick_ms=50, accelerate_for_test=20)
+        service._machine.force_state(PresenceState.ATTENTIVE)
+        service._machine.tick_ms(5_000)  # clear the ATTENTIVE dwell minimum
+
+        task = asyncio.create_task(service.run())
+        await asyncio.sleep(0.2)
+
+        async with AegisBus.connect(nats_server) as publisher:
+            for _ in range(12):
+                await publisher.publish(
+                    "senses.presence",
+                    PresenceObserved(
+                        timestamp=datetime.now(UTC),
+                        present=False,
+                        source="host_input",
+                        confidence=1.0,
+                    ),
+                )
+                await asyncio.sleep(0.15)
+
+        service.shutdown()
+        await asyncio.wait_for(task, timeout=5)
+
+    currents = [m.current for m in received]
+    assert PresenceState.DORMANT in currents, (
+        f"organism never reached DORMANT; transitions were {currents}"
+    )

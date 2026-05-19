@@ -12,7 +12,7 @@ from collections.abc import AsyncIterator
 from pathlib import Path
 
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -27,6 +27,7 @@ def build_app(
     app = FastAPI(title="Aegis Core Observer", version="0.1.0")
     app.state.buffer = buffer
     app.state.db_path = Path(db_path)
+    app.state.bus = None
 
     here = Path(__file__).resolve().parent
     app.mount(
@@ -65,8 +66,14 @@ def build_app(
         )
 
     @app.get("/healthz")
-    def healthz() -> dict[str, str]:
-        return {"status": "ok"}
+    def healthz() -> JSONResponse:
+        bus = app.state.bus
+        if bus is not None and not bus.is_connected:
+            return JSONResponse(
+                status_code=503,
+                content={"status": "unhealthy", "bus": "disconnected"},
+            )
+        return JSONResponse(status_code=200, content={"status": "ok"})
 
     @app.get("/api/now")
     def api_now() -> dict:

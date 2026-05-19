@@ -30,6 +30,11 @@ class AegisBus(Generic[T]):
     def __init__(self, nc: NATSClient) -> None:
         self._nc = nc
 
+    @property
+    def is_connected(self) -> bool:
+        """True when the underlying NATS connection is live."""
+        return self._nc.is_connected
+
     @classmethod
     @contextlib.asynccontextmanager
     async def connect(cls, url: str = "nats://127.0.0.1:4222") -> AsyncIterator[AegisBus]:

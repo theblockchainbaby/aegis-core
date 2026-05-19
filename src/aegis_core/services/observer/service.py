@@ -74,6 +74,7 @@ class ObserverService(AegisService):
             "memory.continuity_candidate", ContinuityCandidate, self._on_candidate
         )
         self._bus_ref = bus
+        self._app.state.bus = bus
         try:
             self._scheduler = Scheduler(load_schedule(self._schedule_path))
         except FileNotFoundError:

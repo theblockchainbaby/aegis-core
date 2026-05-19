@@ -97,6 +97,8 @@ async def _supervise(nats_proc, services, *, poll_interval: float = 1.0) -> int:
     try:
         await watcher
     except (asyncio.CancelledError, Exception):
+        # The watcher has done its job by the time we await it here; any
+        # error it raises on cancellation is safe to drop.
         pass
 
     for s in services:
@@ -141,6 +143,10 @@ def up(nats_url: str) -> None:
             nats_proc.kill()
         click.echo("aegis-core stopped")
     if exit_code != 0:
+        click.echo(
+            "FATAL: NATS subprocess died. Exiting nonzero so a supervisor "
+            "can restart the organism."
+        )
         raise SystemExit(exit_code)
 
 

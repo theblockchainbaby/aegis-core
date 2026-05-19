@@ -94,3 +94,44 @@ def test_lit_room_does_not_sleep():
     for _ in range(10):
         t = m.observe_ambient_light(AmbientLightReading(timestamp=_now(), lux=400.0))
     assert m.current == PresenceState.DORMANT
+
+
+def test_complete_settling_descent_target_lands_on_observing():
+    m = PresenceStateMachine(initial=PresenceState.ATTENTIVE)
+    m.tick_ms(5_000)  # clear the ATTENTIVE dwell minimum
+    routed = m.request_transition(PresenceState.DORMANT, "presence_lost")
+    assert routed is not None
+    assert m.current == PresenceState.SETTLING
+    m.tick_ms(5_000)  # clear the SETTLING dwell minimum
+    done = m.complete_settling()
+    assert done is not None
+    assert done.current == PresenceState.OBSERVING
+    assert done.reason == "settling_complete"
+    assert m.current == PresenceState.OBSERVING
+
+
+def test_complete_settling_upward_target_lands_on_attentive():
+    m = PresenceStateMachine(initial=PresenceState.REFLECTIVE)
+    m.tick_ms(5_000)  # clear the REFLECTIVE dwell minimum
+    routed = m.request_transition(PresenceState.ATTENTIVE, "leaving_reflective")
+    assert routed is not None
+    assert m.current == PresenceState.SETTLING
+    m.tick_ms(5_000)  # clear the SETTLING dwell minimum
+    done = m.complete_settling()
+    assert done is not None
+    assert done.current == PresenceState.ATTENTIVE
+    assert m.current == PresenceState.ATTENTIVE
+
+
+def test_complete_settling_noop_when_not_settling():
+    m = PresenceStateMachine(initial=PresenceState.ATTENTIVE)
+    assert m.complete_settling() is None
+
+
+def test_complete_settling_waits_for_settling_dwell():
+    m = PresenceStateMachine(initial=PresenceState.ATTENTIVE)
+    m.tick_ms(5_000)
+    m.request_transition(PresenceState.DORMANT, "presence_lost")
+    assert m.current == PresenceState.SETTLING
+    # The SETTLING dwell minimum has not elapsed yet, so completion holds.
+    assert m.complete_settling() is None

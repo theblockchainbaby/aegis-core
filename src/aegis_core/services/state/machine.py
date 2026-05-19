@@ -28,6 +28,7 @@ class PresenceStateMachine:
         self._state = initial
         self._dwell_ms = 0
         self._dark_streak = 0
+        self._settling_target: PresenceState | None = None
 
     @property
     def current(self) -> PresenceState:
@@ -74,8 +75,10 @@ class PresenceStateMachine:
         if is_allowed(self._state, to_state):
             return self._make_transition(to_state, reason)
 
-        # If we can reach Settling from here, route there first.
+        # If we can reach Settling from here, route there first, and
+        # remember the target so complete_settling can land correctly.
         if is_allowed(self._state, PresenceState.SETTLING):
+            self._settling_target = to_state
             return self._make_transition(PresenceState.SETTLING, f"settling_for:{reason}")
 
         return None
@@ -95,6 +98,32 @@ class PresenceStateMachine:
         ):
             return self._make_transition(PresenceState.OBSERVING, "quiet_expired")
         return None
+
+    def complete_settling(self) -> StateChanged | None:
+        """Land the organism once the Settling dwell expires.
+
+        Settling is a cushion. When it expires, descend toward Observing if
+        the routed target was a lower state (sensor events then carry the
+        organism the rest of the way down to Dormant). Otherwise return to
+        Attentive. Returns None if not currently Settling or the dwell
+        minimum has not yet elapsed.
+        """
+        if self._state != PresenceState.SETTLING:
+            return None
+        if self._dwell_ms < MIN_DWELL_MS[PresenceState.SETTLING]:
+            return None
+        descent = {
+            PresenceState.OBSERVING,
+            PresenceState.DORMANT,
+            PresenceState.SLEEP,
+        }
+        landing = (
+            PresenceState.OBSERVING
+            if self._settling_target in descent
+            else PresenceState.ATTENTIVE
+        )
+        self._settling_target = None
+        return self._make_transition(landing, "settling_complete")
 
     # --- event ingestors ---
 

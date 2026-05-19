@@ -84,13 +84,11 @@ class PresenceStateMachine:
         return None
 
     def elapse(self) -> StateChanged | None:
-        """Called periodically by the service tick. Handles auto-expirations.
+        """Called periodically by the service tick. Handles auto expirations.
 
-        - Quiet → Observing after Quiet dwell.
-        - Settling → its target after Settling dwell (target is encoded in
-          the prior transition reason; the service tracks it).
-        For Plan B we only auto-expire Quiet → Observing here. Settling
-        return is handled by the service tracking the requested target.
+        Only Quiet expiry lives here: Quiet returns to Observing once the
+        Quiet dwell elapses. Settling completion is handled separately, by
+        complete_settling, which the service also calls on each tick.
         """
         if (
             self._state == PresenceState.QUIET

@@ -58,6 +58,53 @@ def _make_service_for(name, factory, nats_url, platform=None):
     return factory(nats_url=nats_url)
 
 
+async def _supervise(nats_proc, services, *, poll_interval: float = 1.0) -> int:
+    """Run all services until shutdown, watching the NATS subprocess.
+
+    Returns 0 on a clean signal driven shutdown. Returns 1 if the NATS
+    subprocess exited underneath us. A nonzero return is the signal to
+    die loudly so a supervisor can restart the whole organism, rather
+    than lingering as a half dead process whose bus is gone.
+    """
+    tasks = [asyncio.create_task(s.run()) for s in services]
+    stop = asyncio.Event()
+    nats_died = False
+
+    loop = asyncio.get_running_loop()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        try:
+            loop.add_signal_handler(sig, stop.set)
+        except (NotImplementedError, ValueError):
+            pass
+
+    async def watch_nats() -> None:
+        nonlocal nats_died
+        while not stop.is_set():
+            if nats_proc.poll() is not None:
+                nats_died = True
+                log.error(
+                    "up.nats_exited",
+                    returncode=nats_proc.returncode,
+                    detail="NATS subprocess died; tearing down and exiting nonzero",
+                )
+                stop.set()
+                return
+            await asyncio.sleep(poll_interval)
+
+    watcher = asyncio.create_task(watch_nats())
+    await stop.wait()
+    watcher.cancel()
+    try:
+        await watcher
+    except (asyncio.CancelledError, Exception):
+        pass
+
+    for s in services:
+        s.shutdown()
+    await asyncio.gather(*tasks, return_exceptions=True)
+    return 1 if nats_died else 0
+
+
 @click.group()
 def main() -> None:
     """aegis-core dev CLI."""
@@ -76,25 +123,16 @@ def up(nats_url: str) -> None:
     )
     click.echo(f"NATS server started (pid={nats_proc.pid})")
 
-    async def run_all() -> None:
+    async def run_all() -> int:
         services = [
             _make_service_for(name, factory, nats_url)
             for name, factory in SERVICE_FACTORIES.items()
         ]
-        tasks = [asyncio.create_task(s.run()) for s in services]
+        return await _supervise(nats_proc, services)
 
-        loop = asyncio.get_running_loop()
-        stop = asyncio.Event()
-        for sig in (signal.SIGINT, signal.SIGTERM):
-            loop.add_signal_handler(sig, stop.set)
-        await stop.wait()
-
-        for s in services:
-            s.shutdown()
-        await asyncio.gather(*tasks, return_exceptions=True)
-
+    exit_code = 0
     try:
-        asyncio.run(run_all())
+        exit_code = asyncio.run(run_all())
     finally:
         nats_proc.terminate()
         try:
@@ -102,6 +140,8 @@ def up(nats_url: str) -> None:
         except subprocess.TimeoutExpired:
             nats_proc.kill()
         click.echo("aegis-core stopped")
+    if exit_code != 0:
+        raise SystemExit(exit_code)
 
 
 @main.command()

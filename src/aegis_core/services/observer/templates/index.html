@@ -15,23 +15,22 @@
 
     <section class="now">
       <h2>Now</h2>
-      {% if state %}
       <p class="row">
         <span class="label">Presence</span>
-        <span class="value">{{ state.current }}</span>
+        {% if state %}
+        <span class="value" id="presence-value">{{ state.current }}</span>
+        {% else %}
+        <span class="value muted" id="presence-value">no reading yet</span>
+        {% endif %}
       </p>
-      {% else %}
-      <p class="row muted">No presence state recorded yet.</p>
-      {% endif %}
-
-      {% if mood %}
       <p class="row">
         <span class="label">Mood</span>
-        <span class="value">
-          {{ mood.palette }} · breath {{ mood.breath_cadence_seconds }}s · warmth {{ mood.warmth }}
-        </span>
+        {% if mood %}
+        <span class="value" id="mood-value">{{ mood.palette }} · breath {{ mood.breath_cadence_seconds }}s · warmth {{ mood.warmth }}</span>
+        {% else %}
+        <span class="value muted" id="mood-value">no reading yet</span>
+        {% endif %}
       </p>
-      {% endif %}
     </section>
 
     <section class="recent">
@@ -82,7 +81,7 @@
       <ol id="events" class="event-list">
         {% for event in events %}
         <li>
-          <time>{{ event.timestamp[11:19] }}</time>
+          <time datetime="{{ event.timestamp }}">{{ event.timestamp[11:19] }}</time>
           <span class="event-subject">{{ event.subject }}</span>
         </li>
         {% endfor %}

@@ -55,6 +55,27 @@ async def test_index_page_renders_current_state_when_present(tmp_path: Path):
 
 
 @pytest.mark.asyncio
+async def test_index_exposes_live_now_panel_ids(tmp_path: Path):
+    import httpx
+
+    from aegis_core.services.observer.app import build_app
+
+    app = build_app(
+        buffer=EventRingBuffer(capacity=50),
+        db_path=tmp_path / "m.db",
+    )
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(
+        transport=transport, base_url="http://test"
+    ) as client:
+        r = await client.get("/")
+    body = r.text
+    # app.js targets these ids to update the Now panel live over SSE.
+    assert 'id="presence-value"' in body
+    assert 'id="mood-value"' in body
+
+
+@pytest.mark.asyncio
 async def test_static_css_serves(tmp_path: Path):
     import httpx
 

@@ -135,16 +135,42 @@ class ObserverService(AegisService):
         await self._append("memory.continuity_candidate", msg)
 
     async def _scheduler_loop(self) -> None:
+        log.info(
+            "observer.scheduler_loop_started",
+            schedule_path=str(self._schedule_path),
+            scheduler_present=self._scheduler is not None,
+        )
         while not self._shutdown.is_set():
             await asyncio.sleep(30)
             if self._scheduler is None or self._bus_ref is None:
+                log.warning(
+                    "observer.scheduler_tick_skipped",
+                    scheduler_present=self._scheduler is not None,
+                    bus_ref_present=self._bus_ref is not None,
+                )
                 continue
-            triggers = self._scheduler.tick(now=datetime.now(UTC))
+            now = datetime.now(UTC)
+            triggers = self._scheduler.tick(now=now)
+            log.info(
+                "observer.scheduler_tick",
+                now=now.isoformat(),
+                n_triggers=len(triggers),
+            )
             for t in triggers:
                 try:
                     target = PresenceState(t.target_state)
                 except ValueError:
+                    log.warning(
+                        "observer.scheduler_unknown_state",
+                        target_state=t.target_state,
+                    )
                     continue
+                log.info(
+                    "observer.scheduler_trigger_fired",
+                    name=t.name,
+                    target_state=t.target_state,
+                    reason=t.reason,
+                )
                 await self._bus_ref.publish(
                     "state.changed",
                     StateChanged(

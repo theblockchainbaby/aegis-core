@@ -10,6 +10,7 @@ canonical-cycle test can drive them directly.
 """
 from __future__ import annotations
 
+import asyncio
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -28,14 +29,22 @@ from .theme_tokenizer import tokenize_themes
 log = structlog.get_logger()
 
 DEFAULT_DB_PATH = "/tmp/aegis-memory.db"
+# 1 hour: survives a Mac sleep and gives the dogfood multiple passes per day
+DEFAULT_CONSOLIDATE_INTERVAL_SECONDS = 3600.0
 
 
 class KeeperService(AegisService):
     name = "keeper"
 
-    def __init__(self, db_path: str | Path = DEFAULT_DB_PATH, **kwargs) -> None:
+    def __init__(
+        self,
+        db_path: str | Path = DEFAULT_DB_PATH,
+        consolidate_interval_seconds: float = DEFAULT_CONSOLIDATE_INTERVAL_SECONDS,
+        **kwargs,
+    ) -> None:
         super().__init__(**kwargs)
         self._db_path = Path(db_path)
+        self._consolidate_interval_seconds = consolidate_interval_seconds
         self._conn = None
         self._moments: MomentStore | None = None
         self._themes: ThemeStore | None = None
@@ -57,6 +66,37 @@ class KeeperService(AegisService):
                 self._conn.close()
             except Exception:
                 pass
+
+    async def main(self, bus: AegisBus) -> None:
+        """Periodic consolidation loop.
+
+        Wakes every ``consolidate_interval_seconds`` and runs
+        ``consolidate_now_async``, which classifies tentative Moments and
+        publishes ``memory.continuity_candidate`` events for newly
+        consolidated ones. Exits promptly when shutdown is requested.
+
+        Logs ``keeper.main_loop_started`` at the start so silent task death
+        is observable from day one (lesson learned from gap A).
+        """
+        log.info(
+            "keeper.main_loop_started",
+            interval_seconds=self._consolidate_interval_seconds,
+        )
+        while not self._shutdown.is_set():
+            try:
+                await asyncio.wait_for(
+                    self._shutdown.wait(),
+                    timeout=self._consolidate_interval_seconds,
+                )
+                # _shutdown fired during the wait; exit promptly.
+                break
+            except TimeoutError:
+                # The interval elapsed; run a consolidation pass.
+                pass
+            try:
+                await self.consolidate_now_async()
+            except Exception:
+                log.exception("keeper.consolidate_failed")
 
     def consolidate_now(self) -> dict[str, int]:
         """Run one consolidation pass over all tentative Moments.

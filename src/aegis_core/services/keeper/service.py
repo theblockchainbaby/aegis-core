@@ -28,7 +28,7 @@ from .theme_tokenizer import tokenize_themes
 
 log = structlog.get_logger()
 
-DEFAULT_DB_PATH = "/tmp/aegis-memory.db"
+DEFAULT_DB_PATH = str(Path.home() / ".aegis-core" / "memory.db")
 # 1 hour: survives a Mac sleep and gives the dogfood multiple passes per day
 DEFAULT_CONSOLIDATE_INTERVAL_SECONDS = 3600.0
 

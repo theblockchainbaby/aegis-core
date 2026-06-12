@@ -42,7 +42,7 @@ from .router import route
 
 log = structlog.get_logger()
 
-DEFAULT_DB_PATH = "/tmp/aegis-memory.db"
+DEFAULT_DB_PATH = str(Path.home() / ".aegis-core" / "memory.db")
 # Discard cached ContinuityCandidate events older than this.
 CANDIDATE_TTL_SECONDS = 60.0
 # Retrieval path: how far back to look for consolidated Moments.

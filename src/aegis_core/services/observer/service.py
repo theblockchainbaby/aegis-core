@@ -30,7 +30,7 @@ log = structlog.get_logger()
 
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 8080
-DEFAULT_DB_PATH = "/tmp/aegis-memory.db"
+DEFAULT_DB_PATH = str(Path.home() / ".aegis-core" / "memory.db")
 DEFAULT_BUFFER_CAPACITY = 500
 
 

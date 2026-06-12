@@ -45,3 +45,6 @@ docs/superpowers/
 # Secrets
 .env
 .env.local
+
+# launchd stdout/stderr (huge, regenerable)
+dogfood/up.*.log

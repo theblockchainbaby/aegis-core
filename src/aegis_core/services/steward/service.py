@@ -33,7 +33,7 @@ from .tone_classifier import ToneClassifier
 
 log = structlog.get_logger()
 
-DEFAULT_DB_PATH = "/tmp/aegis-memory.db"
+DEFAULT_DB_PATH = str(Path.home() / ".aegis-core" / "memory.db")
 
 
 class StewardService(AegisService):

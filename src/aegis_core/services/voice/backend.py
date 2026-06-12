@@ -25,7 +25,7 @@ class StdoutBackend:
     def __init__(
         self,
         stream: IO[str] | None = None,
-        log_path: str | Path | None = "/tmp/aegis-voice.log",
+        log_path: str | Path | None = str(Path.home() / ".aegis-core" / "voice.log"),
     ) -> None:
         self._stream = stream if stream is not None else sys.stdout
         self._log_path = Path(log_path) if log_path is not None else None

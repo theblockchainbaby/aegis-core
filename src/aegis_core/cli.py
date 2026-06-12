@@ -299,7 +299,7 @@ def memory() -> None:
 
 
 @memory.command("inspect")
-@click.option("--db", default="/tmp/aegis-memory.db", help="SQLite path.")
+@click.option("--db", default=str(Path.home() / ".aegis-core" / "memory.db"), help="SQLite path.")
 @click.option(
     "--raw",
     is_flag=True,
@@ -381,7 +381,7 @@ def interventions() -> None:
 
 
 @interventions.command("inspect")
-@click.option("--db", default="/tmp/aegis-memory.db", help="SQLite path.")
+@click.option("--db", default=str(Path.home() / ".aegis-core" / "memory.db"), help="SQLite path.")
 @click.option("--limit", default=50, help="Items per section.")
 def interventions_inspect(db: str, limit: int) -> None:
     """Show aired and vetoed interventions from the log."""
@@ -456,7 +456,7 @@ def voice() -> None:
 
 
 @voice.command("tail")
-@click.option("--log", default="/tmp/aegis-voice.log", help="Voice log path.")
+@click.option("--log", default=str(Path.home() / ".aegis-core" / "voice.log"), help="Voice log path.")
 def voice_tail(log: str) -> None:
     """Tail the voice service log file."""
     import time as _time
@@ -521,7 +521,7 @@ def mood_watch(nats_url: str) -> None:
 @click.option("--nats-url", default="nats://127.0.0.1:4222")
 @click.option("--host", default="127.0.0.1")
 @click.option("--port", default=8080, type=int)
-@click.option("--db", default="/tmp/aegis-memory.db")
+@click.option("--db", default=str(Path.home() / ".aegis-core" / "memory.db"))
 @click.option("--schedule", default=None, help="Path to schedule.yaml (defaults to repo).")
 def observer(nats_url: str, host: str, port: int, db: str, schedule: str | None) -> None:
     """Start the observer cockpit on http://host:port/."""
@@ -570,7 +570,7 @@ def dogfood() -> None:
 
 
 @dogfood.command("start")
-@click.option("--db", default="/tmp/aegis-memory.db")
+@click.option("--db", default=str(Path.home() / ".aegis-core" / "memory.db"))
 def dogfood_start(db: str) -> None:
     """Mark today as Day 1 of the 90-day dogfood."""
     from datetime import UTC
